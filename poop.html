@@ -56,11 +56,11 @@ body::before {
 }
 
 .poop-chart-wrap { width: 100%; }
-.poop-chart-wrap svg { width: 100%; height: 280px; display: block; overflow: visible; }
+.poop-chart-wrap svg { width: 100%; height: 300px; display: block; overflow: visible; }
 .axis-label { font-family: var(--font-mono); font-size: 11px; fill: var(--text-tertiary); }
 .day-label { font-family: var(--font); font-size: 12px; fill: var(--text-tertiary); font-weight: 600; }
 .day-label.today { fill: var(--text-primary); }
-.time-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; fill: var(--poop); }
+.time-label { font-family: var(--font-mono); font-size: 9px; font-weight: 700; fill: var(--poop); }
 
 .poop-actions { display: flex; gap: 10px; margin: 4px 0 14px; }
 .add-poop-btn {
@@ -239,7 +239,9 @@ body::before {
 
   function renderChart() {
     const svg = document.getElementById('poopChart');
-    const W = 640, H = 300, padT = 20, padB = 36, padL = 34, padR = 10;
+    const H = 300, padT = 20, padB = 36, padL = 34, padR = 10;
+    const W = Math.max(320, svg.parentElement.clientWidth || 640);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     const chartW = W - padL - padR, chartH = H - padT - padB;
     const days = last7Days();
     const colW = chartW / 7;
@@ -341,6 +343,7 @@ body::before {
     closeManualModal();
   });
 
+  window.addEventListener('resize', renderChart);
   render();
 })();
 </script>
