@@ -115,12 +115,13 @@ body::before {
 .entry-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .entry-time { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .entry-stars { font-size: 11px; color: var(--poop); }
-.entry-del {
+.entry-edit, .entry-del {
   width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12);
-  background: transparent; color: var(--text-tertiary); font-size: 14px; line-height: 1;
+  background: transparent; color: var(--text-tertiary); font-size: 13px; line-height: 1;
   cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; justify-content: center;
 }
-.entry-del:active { background: rgba(255,255,255,0.08); }
+.entry-edit:active, .entry-del:active { background: rgba(255,255,255,0.08); }
 
 /* ===== Modals ===== */
 .modal-bg {
@@ -227,7 +228,7 @@ body::before {
 <div class="modal-bg" id="manualBg">
   <div class="modal" role="dialog" aria-label="Manual poop entry">
     <div class="modal-head">
-      <span class="modal-title">Manual Entry</span>
+      <span class="modal-title" id="manualModalTitle">Manual Entry</span>
       <button class="modal-close" id="manualClose" type="button" aria-label="Close">×</button>
     </div>
     <div class="field">
@@ -283,6 +284,7 @@ body::before {
   let state = load();
   let pendingPhoto = null;
   let pendingRating = 0;
+  let editingId = null;
 
   function pad2(n) { return String(n).padStart(2, '0'); }
   function dayKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -309,6 +311,15 @@ body::before {
   }
   function deleteEntry(id) {
     state.entries = state.entries.filter((e) => e.id !== id);
+    save(state);
+    renderAll();
+  }
+  function updateEntry(id, e) {
+    const entry = state.entries.find((x) => x.id === id);
+    if (!entry) return;
+    entry.ts = e.ts.toISOString();
+    entry.photo = e.photo || null;
+    entry.rating = e.rating || 0;
     save(state);
     renderAll();
   }
@@ -512,8 +523,10 @@ body::before {
       return '<div class="entry-row2">' + thumb
         + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
         + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + '</div>'
+        + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">⚙️</button>'
         + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
     }).join('');
+    el.querySelectorAll('.entry-edit').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
     el.querySelectorAll('.entry-del').forEach((btn) => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
   }
 
@@ -540,10 +553,28 @@ body::before {
     updateStars();
   }
   function openManualModal() {
+    editingId = null;
+    document.getElementById('manualModalTitle').textContent = 'Manual Entry';
     const now = new Date();
     document.getElementById('manualDate').value = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
     document.getElementById('manualTime').value = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
     resetManualExtras();
+    document.getElementById('manualBg').classList.add('show');
+  }
+  function openEditModal(id) {
+    const entry = state.entries.find((e) => e.id === id);
+    if (!entry) return;
+    editingId = id;
+    document.getElementById('manualModalTitle').textContent = 'Edit Entry';
+    const d = new Date(entry.ts);
+    document.getElementById('manualDate').value = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    document.getElementById('manualTime').value = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    pendingPhoto = entry.photo || null;
+    pendingRating = entry.rating || 0;
+    const img = document.getElementById('photoPreviewImg');
+    if (pendingPhoto) { img.src = pendingPhoto; img.style.display = 'block'; document.getElementById('photoPreviewText').style.display = 'none'; }
+    else { img.style.display = 'none'; document.getElementById('photoPreviewText').style.display = 'block'; }
+    updateStars();
     document.getElementById('manualBg').classList.add('show');
   }
   function closeManualModal() { document.getElementById('manualBg').classList.remove('show'); }
@@ -575,7 +606,9 @@ body::before {
     if (!dateStr || !timeStr) return;
     const [y, mo, da] = dateStr.split('-').map(Number);
     const [h, mi] = timeStr.split(':').map(Number);
-    addEntry({ ts: new Date(y, mo - 1, da, h, mi, 0, 0), photo: pendingPhoto, rating: pendingRating });
+    const ts = new Date(y, mo - 1, da, h, mi, 0, 0);
+    if (editingId) updateEntry(editingId, { ts, photo: pendingPhoto, rating: pendingRating });
+    else addEntry({ ts, photo: pendingPhoto, rating: pendingRating });
     closeManualModal();
   });
 
