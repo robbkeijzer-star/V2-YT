@@ -62,8 +62,9 @@ body::before {
 .day-label.today { fill: var(--text-primary); }
 .time-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; fill: var(--poop); }
 
+.poop-actions { display: flex; gap: 10px; margin: 4px 0 14px; }
 .add-poop-btn {
-  display: block; width: 100%; margin: 4px 0 14px; padding: 15px;
+  flex: 1; display: block; padding: 15px;
   border: 1px solid rgba(192,133,82,0.35); border-radius: 14px;
   background: rgba(192,133,82,0.12); color: var(--text-primary);
   font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
@@ -71,6 +72,44 @@ body::before {
   -webkit-tap-highlight-color: transparent;
 }
 .add-poop-btn:active { transform: scale(0.98); background: rgba(192,133,82,0.22); }
+.add-poop-btn.manual {
+  background: transparent; border-color: rgba(255,255,255,0.14); color: var(--text-secondary);
+}
+.add-poop-btn.manual:active { background: rgba(255,255,255,0.06); }
+
+/* ===== Manual entry modal ===== */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 120; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.modal-bg.show { display: flex; }
+.modal {
+  width: 100%; max-width: 400px;
+  background: #0e0e10; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px; padding: 22px; box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.modal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.modal-close { border: 0; background: transparent; color: var(--text-tertiary); font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.modal-close:hover { color: var(--text-primary); }
+.field { margin-bottom: 14px; }
+.field-label { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 7px; display: block; }
+.set-input {
+  width: 100%; padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 11px;
+  background: rgba(0,0,0,0.3); color: var(--text-primary);
+  font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.set-input:focus { border-color: rgba(255,255,255,0.28); }
+.set-save {
+  width: 100%; margin-top: 6px; padding: 13px; border: 0; border-radius: 12px;
+  background: linear-gradient(180deg,#FFFFFF,#E8E5DD); color: #0A0A0B;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 22px rgba(0,0,0,0.25);
+  transition: filter 0.15s, transform 0.1s;
+}
+.set-save:active { transform: translateY(1px); }
 
 .today-list { display: flex; flex-direction: column; gap: 8px; }
 .today-empty { font-size: 13px; color: var(--text-tertiary); padding: 4px 0; }
@@ -100,13 +139,35 @@ body::before {
     </div>
   </div>
 
-  <button id="addPoopBtn" class="add-poop-btn" type="button">+ Add Poop</button>
+  <div class="poop-actions">
+    <button id="manualPoopBtn" class="add-poop-btn manual" type="button">+ Manual Poop</button>
+    <button id="addPoopBtn" class="add-poop-btn" type="button">+ Add Poop</button>
+  </div>
 
   <div class="gm-card">
     <div class="card-title">Today</div>
     <div id="todayList" class="today-list"></div>
   </div>
 
+</div>
+
+<!-- ===== Manual entry modal ===== -->
+<div class="modal-bg" id="manualBg">
+  <div class="modal" role="dialog" aria-label="Manual poop entry">
+    <div class="modal-head">
+      <span class="modal-title">Manual Entry</span>
+      <button class="modal-close" id="manualClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Date</label>
+      <input type="date" id="manualDate" class="set-input">
+    </div>
+    <div class="field">
+      <label class="field-label">Time</label>
+      <input type="time" id="manualTime" class="set-input">
+    </div>
+    <button id="manualSave" class="set-save" type="button">Save</button>
+  </div>
 </div>
 
 <script>
@@ -144,6 +205,30 @@ body::before {
     state.entries.push(new Date().toISOString());
     save(state);
     render();
+  }
+
+  function addManualPoop(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return;
+    const [y, mo, da] = dateStr.split('-').map(Number);
+    const [h, mi] = timeStr.split(':').map(Number);
+    const d = new Date(y, mo - 1, da, h, mi, 0, 0);
+    state.entries.push(d.toISOString());
+    save(state);
+    render();
+  }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function openManualModal() {
+    const now = new Date();
+    document.getElementById('manualDate').value =
+      now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    document.getElementById('manualTime').value = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    document.getElementById('manualBg').classList.add('show');
+  }
+
+  function closeManualModal() {
+    document.getElementById('manualBg').classList.remove('show');
   }
 
   function deleteEntry(iso) {
@@ -240,6 +325,18 @@ body::before {
   }
 
   document.getElementById('addPoopBtn').addEventListener('click', addPoop);
+  document.getElementById('manualPoopBtn').addEventListener('click', openManualModal);
+  document.getElementById('manualClose').addEventListener('click', closeManualModal);
+  document.getElementById('manualBg').addEventListener('click', (e) => {
+    if (e.target.id === 'manualBg') closeManualModal();
+  });
+  document.getElementById('manualSave').addEventListener('click', () => {
+    const dateStr = document.getElementById('manualDate').value;
+    const timeStr = document.getElementById('manualTime').value;
+    addManualPoop(dateStr, timeStr);
+    closeManualModal();
+  });
+
   render();
 })();
 </script>
