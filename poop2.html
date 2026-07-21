@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Poop 2.0 · Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+
+<style>
+:root {
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --poop: #C08552;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; background: #050506; color: var(--text-secondary);
+  font-family: var(--font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-height: 100vh; position: relative; overflow-x: hidden;
+  padding: max(28px, env(safe-area-inset-top)) 20px 60px;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(circle at 82% 14%, rgba(192,133,82,0.10), transparent 45%);
+  filter: blur(40px); pointer-events: none; z-index: -2;
+}
+.page { max-width: 1100px; margin: 0 auto; }
+.head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.dash-title {
+  margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.classic-link { font-size: 12px; font-weight: 700; color: var(--text-tertiary); text-decoration: none; letter-spacing: 0.04em; }
+.classic-link:hover { color: var(--text-primary); }
+@media (max-width: 480px) { .dash-title { font-size: 22px; } }
+
+.gm-card {
+  position: relative; background: rgba(255,255,255,0.04); border-radius: 16px; padding: 20px;
+  margin-bottom: 14px; backdrop-filter: blur(24px) saturate(1.2); -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45); overflow: hidden;
+}
+.card-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-primary); margin-bottom: 16px;
+}
+
+/* ===== Stats ===== */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+@media (max-width: 560px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
+.stat-tile { background: rgba(255,255,255,0.04); border-radius: 14px; padding: 14px 8px; text-align: center; }
+.stat-num { font-size: 22px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 4px; }
+
+/* ===== Weekly chart (shared look w/ poop.html) ===== */
+.poop-chart-wrap { width: 100%; }
+.poop-chart-wrap svg { width: 100%; height: 300px; display: block; overflow: visible; }
+.axis-label { font-family: var(--font-mono); font-size: 11px; fill: var(--text-tertiary); }
+.day-label { font-family: var(--font); font-size: 11px; fill: var(--text-tertiary); font-weight: 600; }
+.day-label .day-num { font-size: 14px; font-weight: 700; fill: var(--text-tertiary); }
+.day-label.today .day-num { fill: var(--text-primary); }
+.time-label { font-family: var(--font-mono); font-size: 8px; font-weight: 700; fill: var(--poop); }
+
+/* ===== Actions ===== */
+.poop-actions { display: flex; gap: 10px; margin: 4px 0 14px; }
+.add-poop-btn {
+  flex: 1; display: block; padding: 15px;
+  border: 1px solid rgba(192,133,82,0.35); border-radius: 14px;
+  background: rgba(192,133,82,0.12); color: var(--text-primary);
+  font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
+  cursor: pointer; transition: background 0.15s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+}
+.add-poop-btn:active { transform: scale(0.98); background: rgba(192,133,82,0.22); }
+.add-poop-btn.manual { background: transparent; border-color: rgba(255,255,255,0.14); color: var(--text-secondary); }
+.add-poop-btn.manual:active { background: rgba(255,255,255,0.06); }
+
+/* ===== Monthly heatmap ===== */
+.heatmap-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+.heatmap-weekday { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; color: var(--text-tertiary); text-align: center; text-transform: uppercase; padding-bottom: 2px; }
+.heatmap-cell { aspect-ratio: 1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--text-tertiary); background: rgba(255,255,255,0.035); }
+.heatmap-cell.empty { background: transparent; }
+.heatmap-cell.lvl1 { background: rgba(192,133,82,0.30); color: var(--text-secondary); }
+.heatmap-cell.lvl2 { background: rgba(192,133,82,0.58); color: #050506; }
+.heatmap-cell.lvl3 { background: rgba(192,133,82,0.92); color: #050506; }
+.heatmap-cell.today { outline: 1.5px solid var(--text-primary); outline-offset: -1.5px; }
+
+/* ===== Yearly chart ===== */
+.yearly-wrap svg { width: 100%; height: 160px; display: block; }
+
+/* ===== Gallery ===== */
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.gallery-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
+.gallery-empty { grid-column: 1/-1; font-size: 13px; color: var(--text-tertiary); }
+
+/* ===== Recent list ===== */
+.today-list { display: flex; flex-direction: column; gap: 8px; }
+.today-empty { font-size: 13px; color: var(--text-tertiary); padding: 4px 0; }
+.entry-row2 { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 11px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.entry-thumb { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; flex-shrink: 0; }
+.entry-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(255,255,255,0.05); }
+.entry-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.entry-time { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.entry-stars { font-size: 11px; color: var(--poop); }
+.entry-del {
+  width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12);
+  background: transparent; color: var(--text-tertiary); font-size: 14px; line-height: 1;
+  cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+}
+.entry-del:active { background: rgba(255,255,255,0.08); }
+
+/* ===== Modals ===== */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 120; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.modal-bg.show { display: flex; }
+.modal {
+  width: 100%; max-width: 420px; max-height: 88vh; overflow-y: auto;
+  background: #0e0e10; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px; padding: 22px; box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 10px; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.modal-close { border: 0; background: transparent; color: var(--text-tertiary); font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+.modal-close:hover { color: var(--text-primary); }
+.field { margin-bottom: 14px; }
+.field-label { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 7px; display: block; }
+.set-input {
+  width: 100%; padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 11px;
+  background: rgba(0,0,0,0.3); color: var(--text-primary);
+  font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.set-input:focus { border-color: rgba(255,255,255,0.28); }
+.set-save {
+  width: 100%; margin-top: 6px; padding: 13px; border: 0; border-radius: 12px;
+  background: linear-gradient(180deg,#FFFFFF,#E8E5DD); color: #0A0A0B;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 22px rgba(0,0,0,0.25);
+  transition: filter 0.15s, transform 0.1s;
+}
+.set-save:active { transform: translateY(1px); }
+
+.photo-picker {
+  display: flex; align-items: center; justify-content: center; min-height: 64px;
+  border: 1px dashed rgba(255,255,255,0.16); border-radius: 12px; cursor: pointer;
+  color: var(--text-tertiary); font-size: 13px; overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.photo-picker img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; }
+
+.rating-row { display: flex; gap: 6px; }
+.star-btn {
+  flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 10px 0; font-size: 18px; color: var(--poop); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head-row">
+    <h1 class="dash-title">Poop 2.0</h1>
+    <a class="classic-link" href="poop.html">← Classic view</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-tile"><div class="stat-num" id="statToday">0</div><div class="stat-label">Today</div></div>
+    <div class="stat-tile"><div class="stat-num" id="statWeek">0</div><div class="stat-label">This Week</div></div>
+    <div class="stat-tile"><div class="stat-num" id="statMonth">0</div><div class="stat-label">This Month</div></div>
+    <div class="stat-tile"><div class="stat-num" id="statAll">0</div><div class="stat-label">All Time</div></div>
+  </div>
+
+  <div class="gm-card">
+    <div class="card-title">Weekly Log</div>
+    <div class="poop-chart-wrap">
+      <svg id="poopChart" viewBox="0 0 640 300" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="poop-actions">
+    <button id="manualPoopBtn" class="add-poop-btn manual" type="button">+ Manual Poop</button>
+    <button id="addPoopBtn" class="add-poop-btn" type="button">+ Add Poop</button>
+  </div>
+
+  <div class="gm-card">
+    <div class="card-title">This Month</div>
+    <div class="heatmap-grid" id="heatmapGrid"></div>
+  </div>
+
+  <div class="gm-card">
+    <div class="card-title">This Year</div>
+    <div class="yearly-wrap">
+      <svg id="yearlyChart" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="gm-card">
+    <div class="card-title">Photo Gallery</div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+
+  <div class="gm-card">
+    <div class="card-title">Recent</div>
+    <div class="today-list" id="recentList"></div>
+  </div>
+
+</div>
+
+<!-- ===== Manual entry modal ===== -->
+<div class="modal-bg" id="manualBg">
+  <div class="modal" role="dialog" aria-label="Manual poop entry">
+    <div class="modal-head">
+      <span class="modal-title">Manual Entry</span>
+      <button class="modal-close" id="manualClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Date</label>
+      <input type="date" id="manualDate" class="set-input">
+    </div>
+    <div class="field">
+      <label class="field-label">Time</label>
+      <input type="time" id="manualTime" class="set-input">
+    </div>
+    <div class="field">
+      <label class="field-label">Photo</label>
+      <input type="file" accept="image/*" capture="environment" id="manualPhotoInput" style="display:none">
+      <div class="photo-picker" id="photoPickerBtn">
+        <span id="photoPreviewText">📷 Add Photo</span>
+        <img id="photoPreviewImg" style="display:none">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Rating</label>
+      <div class="rating-row" id="ratingRow">
+        <button class="star-btn" type="button" data-r="1">☆</button>
+        <button class="star-btn" type="button" data-r="2">☆</button>
+        <button class="star-btn" type="button" data-r="3">☆</button>
+        <button class="star-btn" type="button" data-r="4">☆</button>
+        <button class="star-btn" type="button" data-r="5">☆</button>
+      </div>
+    </div>
+    <button id="manualSave" class="set-save" type="button">Save</button>
+  </div>
+</div>
+
+<!-- ===== Photo view modal ===== -->
+<div class="modal-bg" id="viewBg">
+  <div class="modal" role="dialog" aria-label="View photo">
+    <div class="modal-head">
+      <span class="modal-title" id="viewMeta">—</span>
+      <button class="modal-close" id="viewClose" type="button" aria-label="Close">×</button>
+    </div>
+    <img id="viewImg" style="width:100%; border-radius:12px; display:block; margin-bottom:14px;">
+    <button id="viewDeleteBtn" class="add-poop-btn manual" type="button" style="color:#FF6B6B; border-color:rgba(255,107,107,0.35);">Delete Entry</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const KEY = 'poop2_v1';
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || { entries: [] }; } catch (e) { return { entries: [] }; } }
+  function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+
+  let state = load();
+  let pendingPhoto = null;
+  let pendingRating = 0;
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function dayKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function fmtTime(d) {
+    let h = d.getHours(), m = d.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + pad2(m) + ' ' + ampm;
+  }
+  function fmtDateShort(d) { return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  function last7Days() {
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); days.push(d); }
+    return days;
+  }
+
+  function addEntry(e) {
+    state.entries.push({ id: uid(), ts: e.ts.toISOString(), photo: e.photo || null, rating: e.rating || 0 });
+    save(state);
+    renderAll();
+  }
+  function deleteEntry(id) {
+    state.entries = state.entries.filter((e) => e.id !== id);
+    save(state);
+    renderAll();
+  }
+
+  function compressImage(file, cb) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        const maxDim = 480;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } }
+        else { if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; } }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        cb(canvas.toDataURL('image/jpeg', 0.65));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------- Stats ---------- */
+  function computeStats() {
+    const now = new Date();
+    const todayKey = dayKey(now);
+    const weekStart = new Date(now); weekStart.setDate(weekStart.getDate() - 6); weekStart.setHours(0, 0, 0, 0);
+    const monthKey = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
+    let today = 0, week = 0, month = 0;
+    state.entries.forEach((e) => {
+      const d = new Date(e.ts);
+      if (dayKey(d) === todayKey) today++;
+      if (d >= weekStart) week++;
+      if (d.getFullYear() + '-' + pad2(d.getMonth() + 1) === monthKey) month++;
+    });
+    return { today, week, month, all: state.entries.length };
+  }
+
+  function renderStats() {
+    const s = computeStats();
+    document.getElementById('statToday').textContent = s.today;
+    document.getElementById('statWeek').textContent = s.week;
+    document.getElementById('statMonth').textContent = s.month;
+    document.getElementById('statAll').textContent = s.all;
+  }
+
+  /* ---------- Weekly chart ---------- */
+  function renderChart() {
+    const svg = document.getElementById('poopChart');
+    const H = 300, padT = 20, padB = 46, padL = 34, padR = 10;
+    const W = Math.max(320, svg.parentElement.clientWidth || 640);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    const chartW = W - padL - padR, chartH = H - padT - padB;
+    const days = last7Days();
+    const colW = chartW / 7;
+    const todayKey = dayKey(new Date());
+
+    const START_MIN = 7 * 60, END_MIN = 24 * 60, RANGE_MIN = END_MIN - START_MIN;
+    const X = (i) => padL + colW * i + colW / 2;
+    const Y = (mins) => {
+      const clamped = Math.min(END_MIN, Math.max(START_MIN, mins));
+      return padT + chartH - ((clamped - START_MIN) / RANGE_MIN) * chartH;
+    };
+
+    let parts = [];
+    const todayIdx = 6;
+    parts.push('<rect x="' + (padL + colW * todayIdx).toFixed(1) + '" y="' + padT + '" width="' + colW.toFixed(1) + '" height="' + chartH + '" fill="rgba(255,255,255,0.05)"/>');
+
+    const hourMarks = [7, 10, 13, 16, 19, 22, 24];
+    const hourText = ['7 AM', '10 AM', '1 PM', '4 PM', '7 PM', '10 PM', '12 AM'];
+    hourMarks.forEach((hh, i) => {
+      const y = Y(hh * 60);
+      parts.push('<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>');
+      parts.push('<text class="axis-label" x="0" y="' + (y + 4).toFixed(1) + '">' + hourText[i] + '</text>');
+    });
+
+    days.forEach((d, i) => {
+      const key = dayKey(d);
+      const cls = key === todayKey ? 'day-label today' : 'day-label';
+      const wk = d.toLocaleDateString(undefined, { weekday: 'short' });
+      const x = X(i).toFixed(1);
+      parts.push('<text class="' + cls + '" x="' + x + '" y="' + (H - 30) + '" text-anchor="middle">' + wk
+        + '<tspan class="day-num" x="' + x + '" dy="17">' + d.getDate() + '</tspan></text>');
+    });
+
+    const byDay = {};
+    state.entries.forEach((e) => {
+      const d = new Date(e.ts);
+      const key = dayKey(d);
+      (byDay[key] = byDay[key] || []).push(d);
+    });
+
+    days.forEach((day, i) => {
+      const key = dayKey(day);
+      const list = byDay[key] || [];
+      list.sort((a, b) => a - b);
+      list.forEach((d, j) => {
+        const mins = d.getHours() * 60 + d.getMinutes();
+        const x = X(i), y = Y(mins);
+        const labelUp = j % 2 === 0;
+        const ly = labelUp ? y - 16 : y + 26;
+        parts.push('<text x="' + x.toFixed(1) + '" y="' + (y + 6).toFixed(1) + '" text-anchor="middle" font-size="18">💩</text>');
+        parts.push('<text class="time-label" x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle">' + fmtTime(d) + '</text>');
+      });
+    });
+
+    svg.innerHTML = parts.join('');
+  }
+
+  /* ---------- Monthly heatmap ---------- */
+  function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+
+  function renderHeatmap() {
+    const el = document.getElementById('heatmapGrid');
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const dim = daysInMonth(y, m);
+    const firstDow = new Date(y, m, 1).getDay();
+    const leadingBlanks = (firstDow + 6) % 7; // Monday-first grid
+
+    const counts = {};
+    state.entries.forEach((e) => {
+      const d = new Date(e.ts);
+      if (d.getFullYear() === y && d.getMonth() === m) counts[d.getDate()] = (counts[d.getDate()] || 0) + 1;
+    });
+
+    let html = '';
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((w) => { html += '<div class="heatmap-weekday">' + w + '</div>'; });
+    for (let i = 0; i < leadingBlanks; i++) html += '<div class="heatmap-cell empty"></div>';
+    for (let day = 1; day <= dim; day++) {
+      const c = counts[day] || 0;
+      const lvl = c >= 3 ? 3 : c;
+      const isToday = day === now.getDate();
+      html += '<div class="heatmap-cell lvl' + lvl + (isToday ? ' today' : '') + '" title="' + c + ' entries">' + day + '</div>';
+    }
+    el.innerHTML = html;
+  }
+
+  /* ---------- Yearly bar chart ---------- */
+  function renderYearly() {
+    const svg = document.getElementById('yearlyChart');
+    const H = 160, padT = 10, padB = 24, padL = 8, padR = 8;
+    const W = Math.max(300, svg.parentElement.clientWidth || 600);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    const chartW = W - padL - padR, chartH = H - padT - padB;
+
+    const now = new Date(), y = now.getFullYear();
+    const counts = new Array(12).fill(0);
+    state.entries.forEach((e) => {
+      const d = new Date(e.ts);
+      if (d.getFullYear() === y) counts[d.getMonth()]++;
+    });
+    const max = Math.max(1, Math.max.apply(null, counts));
+    const colW = chartW / 12;
+    const monthNames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+
+    let parts = [];
+    counts.forEach((c, i) => {
+      const barH = Math.max(1, (c / max) * chartH);
+      const x = padL + colW * i + colW * 0.18;
+      const w = colW * 0.64;
+      const yTop = padT + chartH - barH;
+      const isCur = i === now.getMonth();
+      parts.push('<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + barH.toFixed(1) + '" rx="4" fill="' + (isCur ? '#C08552' : 'rgba(192,133,82,0.35)') + '"/>');
+      parts.push('<text x="' + (x + w / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" class="axis-label">' + monthNames[i] + '</text>');
+    });
+    svg.innerHTML = parts.join('');
+  }
+
+  /* ---------- Gallery ---------- */
+  function renderGallery() {
+    const el = document.getElementById('galleryGrid');
+    const withPhotos = state.entries.filter((e) => e.photo).sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    if (!withPhotos.length) { el.innerHTML = '<div class="gallery-empty">No photos yet.</div>'; return; }
+    el.innerHTML = withPhotos.map((e) => '<img class="gallery-thumb" src="' + e.photo + '" data-id="' + e.id + '">').join('');
+    el.querySelectorAll('.gallery-thumb').forEach((img) => {
+      img.addEventListener('click', () => openPhotoView(img.dataset.id));
+    });
+  }
+
+  function openPhotoView(id) {
+    const e = state.entries.find((x) => x.id === id);
+    if (!e) return;
+    const d = new Date(e.ts);
+    document.getElementById('viewImg').src = e.photo;
+    document.getElementById('viewMeta').textContent = fmtDateShort(d) + ' · ' + fmtTime(d);
+    document.getElementById('viewDeleteBtn').dataset.id = id;
+    document.getElementById('viewBg').classList.add('show');
+  }
+
+  /* ---------- Recent list ---------- */
+  function renderRecent() {
+    const el = document.getElementById('recentList');
+    const list = state.entries.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 20);
+    if (!list.length) { el.innerHTML = '<div class="today-empty">No entries yet.</div>'; return; }
+    el.innerHTML = list.map((e) => {
+      const d = new Date(e.ts);
+      const stars = e.rating ? '★'.repeat(e.rating) + '☆'.repeat(5 - e.rating) : '';
+      const thumb = e.photo ? '<img class="entry-thumb" src="' + e.photo + '">' : '<div class="entry-thumb placeholder">💩</div>';
+      return '<div class="entry-row2">' + thumb
+        + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
+        + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + '</div>'
+        + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
+    }).join('');
+    el.querySelectorAll('.entry-del').forEach((btn) => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
+  }
+
+  function renderAll() {
+    renderStats();
+    renderChart();
+    renderHeatmap();
+    renderYearly();
+    renderGallery();
+    renderRecent();
+  }
+
+  /* ---------- Manual modal ---------- */
+  function updateStars() {
+    document.querySelectorAll('#ratingRow .star-btn').forEach((b) => {
+      b.textContent = Number(b.dataset.r) <= pendingRating ? '★' : '☆';
+    });
+  }
+  function resetManualExtras() {
+    pendingPhoto = null;
+    pendingRating = 0;
+    document.getElementById('photoPreviewImg').style.display = 'none';
+    document.getElementById('photoPreviewText').style.display = 'block';
+    updateStars();
+  }
+  function openManualModal() {
+    const now = new Date();
+    document.getElementById('manualDate').value = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    document.getElementById('manualTime').value = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    resetManualExtras();
+    document.getElementById('manualBg').classList.add('show');
+  }
+  function closeManualModal() { document.getElementById('manualBg').classList.remove('show'); }
+
+  document.getElementById('addPoopBtn').addEventListener('click', () => addEntry({ ts: new Date() }));
+  document.getElementById('manualPoopBtn').addEventListener('click', openManualModal);
+  document.getElementById('manualClose').addEventListener('click', closeManualModal);
+  document.getElementById('manualBg').addEventListener('click', (e) => { if (e.target.id === 'manualBg') closeManualModal(); });
+
+  document.getElementById('photoPickerBtn').addEventListener('click', () => document.getElementById('manualPhotoInput').click());
+  document.getElementById('manualPhotoInput').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    compressImage(file, (dataUrl) => {
+      pendingPhoto = dataUrl;
+      const img = document.getElementById('photoPreviewImg');
+      img.src = dataUrl; img.style.display = 'block';
+      document.getElementById('photoPreviewText').style.display = 'none';
+    });
+  });
+
+  document.querySelectorAll('#ratingRow .star-btn').forEach((b) => {
+    b.addEventListener('click', () => { pendingRating = Number(b.dataset.r); updateStars(); });
+  });
+
+  document.getElementById('manualSave').addEventListener('click', () => {
+    const dateStr = document.getElementById('manualDate').value;
+    const timeStr = document.getElementById('manualTime').value;
+    if (!dateStr || !timeStr) return;
+    const [y, mo, da] = dateStr.split('-').map(Number);
+    const [h, mi] = timeStr.split(':').map(Number);
+    addEntry({ ts: new Date(y, mo - 1, da, h, mi, 0, 0), photo: pendingPhoto, rating: pendingRating });
+    closeManualModal();
+  });
+
+  /* ---------- Photo view modal ---------- */
+  document.getElementById('viewClose').addEventListener('click', () => document.getElementById('viewBg').classList.remove('show'));
+  document.getElementById('viewBg').addEventListener('click', (e) => { if (e.target.id === 'viewBg') document.getElementById('viewBg').classList.remove('show'); });
+  document.getElementById('viewDeleteBtn').addEventListener('click', function () {
+    deleteEntry(this.dataset.id);
+    document.getElementById('viewBg').classList.remove('show');
+  });
+
+  window.addEventListener('resize', () => { renderChart(); renderYearly(); });
+  renderAll();
+})();
+</script>
+</body>
+</html>
