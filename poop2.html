@@ -121,6 +121,7 @@ body::before {
   cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
   display: flex; align-items: center; justify-content: center;
 }
+.entry-edit { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-weight: 700; font-size: 14px; }
 .entry-edit:active, .entry-del:active { background: rgba(255,255,255,0.08); }
 
 /* ===== Modals ===== */
@@ -523,7 +524,7 @@ body::before {
       return '<div class="entry-row2">' + thumb
         + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
         + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + '</div>'
-        + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">⚙️</button>'
+        + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">i</button>'
         + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
     }).join('');
     el.querySelectorAll('.entry-edit').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
