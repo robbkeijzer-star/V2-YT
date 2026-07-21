@@ -87,6 +87,12 @@ body::before {
 .add-poop-btn:active { transform: scale(0.98); background: rgba(192,133,82,0.22); }
 .add-poop-btn.manual { background: transparent; border-color: rgba(255,255,255,0.14); color: var(--text-secondary); }
 .add-poop-btn.manual:active { background: rgba(255,255,255,0.06); }
+.add-poop-btn.mega {
+  background: linear-gradient(180deg, rgba(192,133,82,0.95), rgba(192,133,82,0.72));
+  color: #050506; border-color: rgba(192,133,82,0.95); font-weight: 800;
+}
+.add-poop-btn.mega:active { background: linear-gradient(180deg, rgba(192,133,82,1), rgba(192,133,82,0.85)); }
+@media (max-width: 520px) { .poop-actions .add-poop-btn { font-size: 12px; padding: 13px 4px; } }
 
 /* ===== Monthly heatmap ===== */
 .heatmap-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
@@ -115,6 +121,7 @@ body::before {
 .entry-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .entry-time { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .entry-stars { font-size: 11px; color: var(--poop); }
+.entry-extra { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entry-edit, .entry-del {
   width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12);
   background: transparent; color: var(--text-tertiary); font-size: 13px; line-height: 1;
@@ -172,6 +179,66 @@ body::before {
   border-radius: 10px; padding: 10px 0; font-size: 18px; color: var(--poop); cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ===== Mega log modal ===== */
+.modal.mega { max-width: 480px; }
+.modal-section-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-primary); margin: 4px 0 10px;
+}
+.modal-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 18px 0; }
+textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
+
+.bristol-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+.bristol-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03); color: var(--text-secondary);
+  font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.bristol-btn .b-emoji { font-size: 16px; }
+.bristol-btn .b-label { font-size: 10px; font-weight: 700; }
+.bristol-btn.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
+.bristol-desc { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.03); font-size: 12.5px; color: var(--text-secondary); min-height: 18px; }
+
+.color-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.color-swatch {
+  position: relative; width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.14); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+}
+.color-swatch.none { background: transparent; border-style: dashed; }
+.color-swatch .check { display: none; color: #fff; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.color-swatch.active .check { display: block; }
+.color-swatch.active { border-color: var(--text-primary); }
+
+.size-row { display: flex; gap: 8px; }
+.size-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 10px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03); color: var(--text-secondary);
+  font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.size-btn .s-label { font-size: 10px; font-weight: 700; }
+.size-btn.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
+
+.mood-row { display: flex; gap: 8px; }
+.mood-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 12px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03); color: var(--text-secondary);
+  font-family: inherit; font-size: 22px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.mood-btn .m-label { font-size: 10px; font-weight: 700; }
+.mood-btn.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
+
+.symptom-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.symptom-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.03); color: var(--text-secondary);
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.symptom-chip.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
 </style>
 </head>
 <body>
@@ -198,6 +265,7 @@ body::before {
 
   <div class="poop-actions">
     <button id="manualPoopBtn" class="add-poop-btn manual" type="button">+ Manual Poop</button>
+    <button id="megaLogBtn" class="add-poop-btn mega" type="button">+ Log Poop</button>
     <button id="addPoopBtn" class="add-poop-btn" type="button">+ Add Poop</button>
   </div>
 
@@ -262,6 +330,76 @@ body::before {
   </div>
 </div>
 
+<!-- ===== Mega log modal ===== -->
+<div class="modal-bg" id="megaBg">
+  <div class="modal mega" role="dialog" aria-label="Log poop">
+    <div class="modal-head">
+      <span class="modal-title">Log Poop</span>
+      <button class="modal-close" id="megaClose" type="button" aria-label="Close">×</button>
+    </div>
+
+    <div class="modal-section-title">When</div>
+    <div class="field-row" style="display:flex; gap:8px; margin-bottom:14px;">
+      <input type="date" id="megaDate" class="set-input">
+      <input type="time" id="megaTime" class="set-input">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Note</label>
+      <textarea id="megaNote" class="set-input" rows="2" placeholder="Anything to remember..."></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Profile</label>
+      <select id="megaProfile" class="set-input">
+        <option value="me">Me</option>
+      </select>
+    </div>
+
+    <div class="modal-divider"></div>
+    <div class="modal-section-title">Bristol Scale</div>
+    <div class="bristol-grid" id="bristolGrid"></div>
+    <div class="bristol-desc" id="bristolDesc">Pick a type to see its description.</div>
+
+    <div class="modal-divider"></div>
+    <div class="modal-section-title">Poop Color</div>
+    <div class="color-row" id="colorRow"></div>
+
+    <div class="modal-section-title">Amount</div>
+    <div class="size-row" id="sizeRow"></div>
+
+    <div class="modal-divider"></div>
+    <div class="modal-section-title">How Was It?</div>
+    <div class="mood-row" id="moodRow"></div>
+
+    <div class="modal-section-title" style="margin-top:16px;">Symptoms</div>
+    <div class="symptom-row" id="symptomRow"></div>
+
+    <div class="modal-divider"></div>
+    <div class="field">
+      <label class="field-label">Photo</label>
+      <input type="file" accept="image/*" capture="environment" id="megaPhotoInput" style="display:none">
+      <div class="photo-picker" id="megaPhotoPickerBtn">
+        <span id="megaPhotoPreviewText">📷 Add Photo</span>
+        <img id="megaPhotoPreviewImg" style="display:none">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Rating</label>
+      <div class="rating-row" id="megaRatingRow">
+        <button class="star-btn" type="button" data-r="1">☆</button>
+        <button class="star-btn" type="button" data-r="2">☆</button>
+        <button class="star-btn" type="button" data-r="3">☆</button>
+        <button class="star-btn" type="button" data-r="4">☆</button>
+        <button class="star-btn" type="button" data-r="5">☆</button>
+      </div>
+    </div>
+
+    <button id="megaSave" class="set-save" type="button">Log Poop</button>
+  </div>
+</div>
+
 <!-- ===== Photo view modal ===== -->
 <div class="modal-bg" id="viewBg">
   <div class="modal" role="dialog" aria-label="View photo">
@@ -287,6 +425,48 @@ body::before {
   let pendingRating = 0;
   let editingId = null;
 
+  const BRISTOL_TYPES = [
+    { id: '1', label: 'Type 1', desc: 'Separate hard lumps' },
+    { id: '2', label: 'Type 2', desc: 'Lumpy and sausage like' },
+    { id: '3', label: 'Type 3', desc: 'A sausage shape with cracks in the surface' },
+    { id: '4', label: 'Type 4', desc: 'Like a smooth, soft sausage or snake' },
+    { id: '5', label: 'Type 5', desc: 'Soft blobs with clear cut edges' },
+    { id: '6', label: 'Type 6', desc: 'Mushy consistency with ragged edges' },
+    { id: '7', label: 'Type 7', desc: 'Liquid consistency with no solid pieces' },
+    { id: 'none', label: 'None', desc: 'No Bowel Movement' }
+  ];
+  const COLORS = [
+    { id: 'default', hex: null, label: 'Default' },
+    { id: 'brown', hex: '#8B5E3C', label: 'Brown' },
+    { id: 'darkred', hex: '#6B1E23', label: 'Dark Red' },
+    { id: 'olive', hex: '#8A8B3F', label: 'Olive' },
+    { id: 'black', hex: '#1A1A1A', label: 'Black' },
+    { id: 'tan', hex: '#D8C9A3', label: 'Tan' }
+  ];
+  const SIZES = [
+    { id: 'default', label: 'Default', scale: 0.8 },
+    { id: 'small', label: 'Small', scale: 0.6 },
+    { id: 'medium', label: 'Medium', scale: 0.85 },
+    { id: 'large', label: 'Large', scale: 1.15 }
+  ];
+  const MOODS = [
+    { id: 'rough', emoji: '😣', label: 'Rough' },
+    { id: 'smooth', emoji: '😌', label: 'Smooth' },
+    { id: 'great', emoji: '😄', label: 'Great' }
+  ];
+  const SYMPTOMS = [
+    { id: 'painful', emoji: '😣', label: 'Painful' },
+    { id: 'sticky', emoji: '🍯', label: 'Sticky' },
+    { id: 'mucus', emoji: '💧', label: 'Mucus' },
+    { id: 'burning', emoji: '🔥', label: 'Burning' },
+    { id: 'undigested', emoji: '🌽', label: 'Undigested' },
+    { id: 'normalsmell', emoji: '👃', label: 'Normal smell' },
+    { id: 'badsmell', emoji: '🤢', label: 'Bad smell' }
+  ];
+
+  let megaBristol = null, megaColor = null, megaSize = null, megaMood = null;
+  let megaSymptoms = [], megaPhoto = null, megaRating = 0;
+
   function pad2(n) { return String(n).padStart(2, '0'); }
   function dayKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
   function fmtTime(d) {
@@ -306,7 +486,12 @@ body::before {
   }
 
   function addEntry(e) {
-    state.entries.push({ id: uid(), ts: e.ts.toISOString(), photo: e.photo || null, rating: e.rating || 0 });
+    state.entries.push({
+      id: uid(), ts: e.ts.toISOString(), photo: e.photo || null, rating: e.rating || 0,
+      note: e.note || '', profile: e.profile || '', bristol: e.bristol || null,
+      color: e.color || null, size: e.size || null, mood: e.mood || null,
+      symptoms: e.symptoms || []
+    });
     save(state);
     renderAll();
   }
@@ -521,9 +706,14 @@ body::before {
       const d = new Date(e.ts);
       const stars = e.rating ? '★'.repeat(e.rating) + '☆'.repeat(5 - e.rating) : '';
       const thumb = e.photo ? '<img class="entry-thumb" src="' + e.photo + '">' : '<div class="entry-thumb placeholder">💩</div>';
+      const extras = [];
+      if (e.bristol) extras.push(e.bristol === 'none' ? 'No BM' : 'Type ' + e.bristol);
+      if (e.mood) { const mo = MOODS.find((x) => x.id === e.mood); if (mo) extras.push(mo.emoji + ' ' + mo.label); }
+      if (e.note) extras.push('"' + (e.note.length > 26 ? e.note.slice(0, 26) + '…' : e.note) + '"');
+      const extraHtml = extras.length ? '<span class="entry-extra">' + extras.join(' · ') + '</span>' : '';
       return '<div class="entry-row2">' + thumb
         + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
-        + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + '</div>'
+        + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + extraHtml + '</div>'
         + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">i</button>'
         + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
     }).join('');
@@ -611,6 +801,139 @@ body::before {
     if (editingId) updateEntry(editingId, { ts, photo: pendingPhoto, rating: pendingRating });
     else addEntry({ ts, photo: pendingPhoto, rating: pendingRating });
     closeManualModal();
+  });
+
+  /* ---------- Mega log modal ---------- */
+  function buildBristolGrid() {
+    const el = document.getElementById('bristolGrid');
+    el.innerHTML = BRISTOL_TYPES.map((t) =>
+      '<button type="button" class="bristol-btn" data-id="' + t.id + '"><span class="b-emoji">' + (t.id === 'none' ? '🚫' : '💩') + '</span><span class="b-label">' + t.label + '</span></button>'
+    ).join('');
+    el.querySelectorAll('.bristol-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        megaBristol = btn.dataset.id;
+        el.querySelectorAll('.bristol-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        const t = BRISTOL_TYPES.find((x) => x.id === megaBristol);
+        document.getElementById('bristolDesc').textContent = t.label + ' — ' + t.desc;
+      });
+    });
+  }
+  function buildColorRow() {
+    const el = document.getElementById('colorRow');
+    el.innerHTML = COLORS.map((c) =>
+      '<button type="button" class="color-swatch' + (c.hex ? '' : ' none') + '" data-id="' + c.id + '" style="' + (c.hex ? 'background:' + c.hex + ';' : '') + '" title="' + c.label + '"><span class="check">✓</span></button>'
+    ).join('');
+    el.querySelectorAll('.color-swatch').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        megaColor = btn.dataset.id;
+        el.querySelectorAll('.color-swatch').forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
+  }
+  function buildSizeRow() {
+    const el = document.getElementById('sizeRow');
+    el.innerHTML = SIZES.map((s) =>
+      '<button type="button" class="size-btn" data-id="' + s.id + '"><span style="font-size:' + Math.round(20 * s.scale) + 'px;">💩</span><span class="s-label">' + s.label + '</span></button>'
+    ).join('');
+    el.querySelectorAll('.size-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        megaSize = btn.dataset.id;
+        el.querySelectorAll('.size-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
+  }
+  function buildMoodRow() {
+    const el = document.getElementById('moodRow');
+    el.innerHTML = MOODS.map((m) =>
+      '<button type="button" class="mood-btn" data-id="' + m.id + '">' + m.emoji + '<span class="m-label">' + m.label + '</span></button>'
+    ).join('');
+    el.querySelectorAll('.mood-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        megaMood = btn.dataset.id;
+        el.querySelectorAll('.mood-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      });
+    });
+  }
+  function buildSymptomRow() {
+    const el = document.getElementById('symptomRow');
+    el.innerHTML = SYMPTOMS.map((s) =>
+      '<button type="button" class="symptom-chip" data-id="' + s.id + '">' + s.emoji + ' ' + s.label + '</button>'
+    ).join('');
+    el.querySelectorAll('.symptom-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (megaSymptoms.includes(id)) megaSymptoms = megaSymptoms.filter((x) => x !== id);
+        else megaSymptoms.push(id);
+        btn.classList.toggle('active');
+      });
+    });
+  }
+  buildBristolGrid();
+  buildColorRow();
+  buildSizeRow();
+  buildMoodRow();
+  buildSymptomRow();
+
+  function updateMegaStars() {
+    document.querySelectorAll('#megaRatingRow .star-btn').forEach((b) => {
+      b.textContent = Number(b.dataset.r) <= megaRating ? '★' : '☆';
+    });
+  }
+  function resetMegaModal() {
+    megaBristol = null; megaColor = null; megaSize = null; megaMood = null;
+    megaSymptoms = []; megaPhoto = null; megaRating = 0;
+    document.getElementById('megaNote').value = '';
+    document.getElementById('bristolDesc').textContent = 'Pick a type to see its description.';
+    document.querySelectorAll('#bristolGrid .bristol-btn, #colorRow .color-swatch, #sizeRow .size-btn, #moodRow .mood-btn, #symptomRow .symptom-chip')
+      .forEach((b) => b.classList.remove('active'));
+    document.getElementById('megaPhotoPreviewImg').style.display = 'none';
+    document.getElementById('megaPhotoPreviewText').style.display = 'block';
+    updateMegaStars();
+  }
+  function openMegaModal() {
+    const now = new Date();
+    document.getElementById('megaDate').value = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    document.getElementById('megaTime').value = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    resetMegaModal();
+    document.getElementById('megaBg').classList.add('show');
+  }
+  function closeMegaModal() { document.getElementById('megaBg').classList.remove('show'); }
+
+  document.getElementById('megaLogBtn').addEventListener('click', openMegaModal);
+  document.getElementById('megaClose').addEventListener('click', closeMegaModal);
+  document.getElementById('megaBg').addEventListener('click', (e) => { if (e.target.id === 'megaBg') closeMegaModal(); });
+
+  document.getElementById('megaPhotoPickerBtn').addEventListener('click', () => document.getElementById('megaPhotoInput').click());
+  document.getElementById('megaPhotoInput').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    compressImage(file, (dataUrl) => {
+      megaPhoto = dataUrl;
+      const img = document.getElementById('megaPhotoPreviewImg');
+      img.src = dataUrl; img.style.display = 'block';
+      document.getElementById('megaPhotoPreviewText').style.display = 'none';
+    });
+  });
+
+  document.querySelectorAll('#megaRatingRow .star-btn').forEach((b) => {
+    b.addEventListener('click', () => { megaRating = Number(b.dataset.r); updateMegaStars(); });
+  });
+
+  document.getElementById('megaSave').addEventListener('click', () => {
+    const dateStr = document.getElementById('megaDate').value;
+    const timeStr = document.getElementById('megaTime').value;
+    if (!dateStr || !timeStr) return;
+    const [y, mo, da] = dateStr.split('-').map(Number);
+    const [h, mi] = timeStr.split(':').map(Number);
+    const ts = new Date(y, mo - 1, da, h, mi, 0, 0);
+    addEntry({
+      ts, photo: megaPhoto, rating: megaRating,
+      note: document.getElementById('megaNote').value.trim(),
+      profile: document.getElementById('megaProfile').value,
+      bristol: megaBristol, color: megaColor, size: megaSize,
+      mood: megaMood, symptoms: megaSymptoms.slice()
+    });
+    closeMegaModal();
   });
 
   /* ---------- Photo view modal ---------- */
