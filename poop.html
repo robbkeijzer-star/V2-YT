@@ -245,8 +245,12 @@ body::before {
     const colW = chartW / 7;
     const todayKey = dayKey(new Date());
 
+    const START_MIN = 7 * 60, END_MIN = 24 * 60, RANGE_MIN = END_MIN - START_MIN;
     const X = (i) => padL + colW * i + colW / 2;
-    const Y = (mins) => padT + chartH - (mins / 1440) * chartH;
+    const Y = (mins) => {
+      const clamped = Math.min(END_MIN, Math.max(START_MIN, mins));
+      return padT + chartH - ((clamped - START_MIN) / RANGE_MIN) * chartH;
+    };
 
     let parts = [];
 
@@ -254,9 +258,9 @@ body::before {
     const todayIdx = 6;
     parts.push('<rect x="' + (padL + colW * todayIdx).toFixed(1) + '" y="' + padT + '" width="' + colW.toFixed(1) + '" height="' + chartH + '" fill="rgba(255,255,255,0.05)"/>');
 
-    // gridlines + hour labels (12a, 6a, 12p, 6p, 12a)
-    const hourMarks = [0, 6, 12, 18, 24];
-    const hourText = ['12 AM', '6 AM', '12 PM', '6 PM', '12 AM'];
+    // gridlines + hour labels (7am — 12am)
+    const hourMarks = [7, 10, 13, 16, 19, 22, 24];
+    const hourText = ['7 AM', '10 AM', '1 PM', '4 PM', '7 PM', '10 PM', '12 AM'];
     hourMarks.forEach((hh, i) => {
       const y = Y(hh * 60);
       parts.push('<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>');
@@ -287,8 +291,8 @@ body::before {
         const mins = d.getHours() * 60 + d.getMinutes();
         const x = X(i), y = Y(mins);
         const labelUp = j % 2 === 0;
-        const ly = labelUp ? y - 12 : y + 20;
-        parts.push('<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="7" fill="#050506" stroke="#C08552" stroke-width="2.5"/>');
+        const ly = labelUp ? y - 16 : y + 26;
+        parts.push('<text x="' + x.toFixed(1) + '" y="' + (y + 6).toFixed(1) + '" text-anchor="middle" font-size="18">💩</text>');
         parts.push('<text class="time-label" x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle">' + fmtTime(d) + '</text>');
       });
     });
