@@ -120,9 +120,15 @@ body::before {
 .hc-dot { width: 3px; height: 3px; border-radius: 50%; background: #fff; flex-shrink: 0; }
 
 /* ===== Year overview ===== */
-.year-ov-head { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 22px; }
-.year-ov-head .card-title { margin-bottom: 0; }
-.year-ov-nav { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; }
+.year-ov-head { position: relative; display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.year-ov-head .card-title { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin-bottom: 0; white-space: nowrap; }
+.year-ov-nav { display: flex; align-items: center; gap: 6px; }
+.year-ov-toggle-pill {
+  padding: 7px 14px; border-radius: 14px; border: none; background: rgba(255,255,255,0.05);
+  color: var(--text-tertiary); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.year-ov-toggle-pill.active { background: var(--text-primary); color: #050506; }
 .year-ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 10px; }
 .year-ov-month-title { font-size: 11px; font-weight: 500; text-align: left; text-transform: lowercase; color: var(--text-tertiary); margin-bottom: 10px; letter-spacing: 0.01em; }
 .year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 1px; column-gap: 2px; }
@@ -320,11 +326,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
   <div class="gm-card">
     <div class="year-ov-head">
+      <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
       <div class="card-title" id="yearOverviewTitle">2026</div>
       <div class="year-ov-nav">
-        <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
         <button class="month-nav-btn" id="yearNextBtn" type="button" aria-label="Next year">›</button>
-        <button class="month-nav-btn" id="yearOverviewToggle" type="button" aria-label="Toggle full year">y</button>
+        <button class="year-ov-toggle-pill" id="yearOverviewToggle" type="button" aria-label="Toggle full year">jaar</button>
       </div>
     </div>
     <div class="year-ov-grid" id="yearOverviewGrid"></div>
