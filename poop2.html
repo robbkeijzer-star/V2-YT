@@ -69,7 +69,7 @@ body::before {
 .month-nav-btn:active { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 .month-nav-btn:disabled { opacity: 0.25; cursor: default; }
 
-.year-ov-toggle-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.year-ov-toggle-row { display: flex; justify-content: center; margin-top: 14px; }
 
 /* ===== Stats ===== */
 .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
@@ -312,15 +312,15 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="gm-card">
-    <div class="year-ov-toggle-row">
-      <button class="month-nav-btn" id="yearOverviewToggle" type="button" aria-label="Toggle full year">▸</button>
-    </div>
     <div class="month-nav">
       <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
       <div class="card-title" id="yearOverviewTitle">2026</div>
       <button class="month-nav-btn" id="yearNextBtn" type="button" aria-label="Next year">›</button>
     </div>
     <div class="year-ov-grid" id="yearOverviewGrid"></div>
+    <div class="year-ov-toggle-row">
+      <button class="month-nav-btn" id="yearOverviewToggle" type="button" aria-label="Toggle full year">▸</button>
+    </div>
   </div>
 
   <div class="gm-card">
