@@ -392,6 +392,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   <div class="gm-card">
     <div class="card-title">Recent</div>
     <div class="today-list" id="recentList"></div>
+    <button class="photo-src-btn" id="recentShowAllBtn" type="button" style="width:100%; margin-top:10px; display:none;">Show all</button>
   </div>
 
 </div>
@@ -1063,13 +1064,18 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     el.querySelectorAll('.entry-edit').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
     el.querySelectorAll('.entry-del').forEach((btn) => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
   }
+  let recentExpanded = false;
   function renderRecent() {
     const el = document.getElementById('recentList');
-    const list = state.entries.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 20);
-    if (!list.length) { el.innerHTML = '<div class="today-empty">No entries yet.</div>'; return; }
+    const btn = document.getElementById('recentShowAllBtn');
+    const all = state.entries.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    if (!all.length) { el.innerHTML = '<div class="today-empty">No entries yet.</div>'; btn.style.display = 'none'; return; }
+    const list = recentExpanded ? all : all.slice(0, 10);
     el.innerHTML = list.map(entryRowHtml).join('');
     bindEntryRowButtons(el);
+    btn.style.display = (!recentExpanded && all.length > 10) ? 'block' : 'none';
   }
+  document.getElementById('recentShowAllBtn').addEventListener('click', () => { recentExpanded = true; renderRecent(); });
 
   function renderAll() {
     renderStats();
