@@ -68,8 +68,8 @@ body::before {
 }
 .month-nav-btn:active { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 .month-nav-btn:disabled { opacity: 0.25; cursor: default; }
+.month-nav-btn.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
 
-.year-ov-toggle-row { display: flex; justify-content: center; margin-top: 14px; }
 
 /* ===== Stats ===== */
 .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
@@ -120,9 +120,12 @@ body::before {
 .hc-dot { width: 3px; height: 3px; border-radius: 50%; background: #fff; flex-shrink: 0; }
 
 /* ===== Year overview ===== */
-.year-ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 10px; }
-.year-ov-month-title { font-size: 10.5px; font-weight: 700; text-align: center; color: var(--text-primary); margin-bottom: 9px; letter-spacing: 0.02em; }
-.year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 5px; column-gap: 2px; }
+.year-ov-head { position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 22px; }
+.year-ov-head .card-title { margin-bottom: 0; }
+.year-ov-nav { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; }
+.year-ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 10px; }
+.year-ov-month-title { font-size: 11px; font-weight: 500; text-align: left; text-transform: lowercase; color: var(--text-tertiary); margin-bottom: 10px; letter-spacing: 0.01em; }
+.year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 6px; column-gap: 2px; }
 .year-ov-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--text-tertiary); border-radius: 50%; }
 .year-ov-day.empty { visibility: hidden; }
 .year-ov-day.has-entry { background: var(--poop); color: #050506; font-weight: 700; }
@@ -312,15 +315,15 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="gm-card">
-    <div class="month-nav">
-      <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
+    <div class="year-ov-head">
       <div class="card-title" id="yearOverviewTitle">2026</div>
-      <button class="month-nav-btn" id="yearNextBtn" type="button" aria-label="Next year">›</button>
+      <div class="year-ov-nav">
+        <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
+        <button class="month-nav-btn" id="yearNextBtn" type="button" aria-label="Next year">›</button>
+        <button class="month-nav-btn" id="yearOverviewToggle" type="button" aria-label="Toggle full year">Y</button>
+      </div>
     </div>
     <div class="year-ov-grid" id="yearOverviewGrid"></div>
-    <div class="year-ov-toggle-row">
-      <button class="month-nav-btn" id="yearOverviewToggle" type="button" aria-label="Toggle full year">▸</button>
-    </div>
   </div>
 
   <div class="gm-card">
@@ -762,11 +765,12 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     return { dayCounts, total };
   }
 
-  function getLast3Months() {
+  function getLast3MonthsOfYear(y) {
     const now = new Date();
+    const endMonth = (y === now.getFullYear()) ? now.getMonth() : 11;
     const arr = [];
     for (let i = 2; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d = new Date(y, endMonth - i, 1);
       arr.push({ y: d.getFullYear(), m: d.getMonth() });
     }
     return arr;
@@ -777,14 +781,12 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     const y = yearOverviewYear;
 
     document.getElementById('yearOverviewTitle').textContent = y;
-    document.getElementById('yearOverviewToggle').textContent = yearOverviewExpanded ? '▾' : '▸';
+    document.getElementById('yearOverviewToggle').classList.toggle('active', yearOverviewExpanded);
     document.getElementById('yearNextBtn').disabled = y >= now.getFullYear();
-    document.getElementById('yearPrevBtn').style.visibility = yearOverviewExpanded ? 'visible' : 'hidden';
-    document.getElementById('yearNextBtn').style.visibility = yearOverviewExpanded ? 'visible' : 'hidden';
 
     const months = yearOverviewExpanded
       ? Array.from({ length: 12 }, (_, m) => ({ y, m }))
-      : getLast3Months();
+      : getLast3MonthsOfYear(y);
 
     let html = '';
     months.forEach(({ y: my, m }) => {
@@ -808,7 +810,6 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
   document.getElementById('yearOverviewToggle').addEventListener('click', () => {
     yearOverviewExpanded = !yearOverviewExpanded;
-    if (!yearOverviewExpanded) yearOverviewYear = new Date().getFullYear();
     renderYearOverview();
   });
   document.getElementById('yearPrevBtn').addEventListener('click', () => { yearOverviewYear--; renderYearOverview(); });
