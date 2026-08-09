@@ -58,6 +58,17 @@ body::before {
   color: var(--text-primary); margin-bottom: 16px;
 }
 
+.month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.month-nav .card-title { margin-bottom: 0; }
+.month-nav-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03); color: var(--text-secondary); font-size: 15px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+.month-nav-btn:active { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.month-nav-btn:disabled { opacity: 0.25; cursor: default; }
+
 /* ===== Stats ===== */
 .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
 @media (max-width: 560px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
@@ -280,7 +291,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="gm-card">
-    <div class="card-title">This Month</div>
+    <div class="month-nav">
+      <button class="month-nav-btn" id="monthPrevBtn" type="button" aria-label="Previous month">‹</button>
+      <div class="card-title" id="monthTitle">This Month</div>
+      <button class="month-nav-btn" id="monthNextBtn" type="button" aria-label="Next month">›</button>
+    </div>
     <div class="heatmap-grid" id="heatmapGrid"></div>
   </div>
 
@@ -638,11 +653,16 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
   /* ---------- Monthly heatmap ---------- */
   function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const initMonthNow = new Date();
+  let heatmapYear = initMonthNow.getFullYear();
+  let heatmapMonth = initMonthNow.getMonth();
 
   function renderHeatmap() {
     const el = document.getElementById('heatmapGrid');
     const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth();
+    const y = heatmapYear, m = heatmapMonth;
+    const isCurrentMonth = y === now.getFullYear() && m === now.getMonth();
     const dim = daysInMonth(y, m);
     const firstDow = new Date(y, m, 1).getDay();
     const leadingBlanks = (firstDow + 6) % 7; // Monday-first grid
@@ -653,18 +673,52 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       if (d.getFullYear() === y && d.getMonth() === m) counts[d.getDate()] = (counts[d.getDate()] || 0) + 1;
     });
 
+    document.getElementById('monthTitle').textContent = isCurrentMonth ? 'This Month' : MONTH_NAMES[m] + ' ' + y;
+    document.getElementById('monthNextBtn').disabled = isCurrentMonth;
+
     let html = '';
     ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((w) => { html += '<div class="heatmap-weekday">' + w + '</div>'; });
     for (let i = 0; i < leadingBlanks; i++) html += '<div class="heatmap-cell empty"></div>';
     for (let day = 1; day <= dim; day++) {
       const c = counts[day] || 0;
       const lvl = c >= 3 ? 3 : c;
-      const isToday = day === now.getDate();
+      const isToday = isCurrentMonth && day === now.getDate();
       const dots = '<span class="hc-dots">' + '<span class="hc-dot"></span>'.repeat(Math.min(c, 4)) + '</span>';
       html += '<div class="heatmap-cell lvl' + lvl + (isToday ? ' today' : '') + '" title="' + c + ' entries"><span class="hc-day">' + day + '</span>' + dots + '</div>';
     }
     el.innerHTML = html;
   }
+
+  function goToPrevMonth() {
+    heatmapMonth--;
+    if (heatmapMonth < 0) { heatmapMonth = 11; heatmapYear--; }
+    renderHeatmap();
+  }
+  function goToNextMonth() {
+    const now = new Date();
+    if (heatmapYear === now.getFullYear() && heatmapMonth === now.getMonth()) return;
+    heatmapMonth++;
+    if (heatmapMonth > 11) { heatmapMonth = 0; heatmapYear++; }
+    renderHeatmap();
+  }
+  document.getElementById('monthPrevBtn').addEventListener('click', goToPrevMonth);
+  document.getElementById('monthNextBtn').addEventListener('click', goToNextMonth);
+
+  (function setupHeatmapSwipe() {
+    const el = document.getElementById('heatmapGrid');
+    let startX = 0, startY = 0, tracking = false;
+    el.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY; tracking = true;
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      if (!tracking) return;
+      tracking = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (dx < 0) goToNextMonth(); else goToPrevMonth();
+    }, { passive: true });
+  })();
 
   /* ---------- Yearly bar chart ---------- */
   function renderYearly() {
