@@ -107,17 +107,39 @@ body::before {
 .add-poop-btn.mega:active { background: linear-gradient(180deg, rgba(192,133,82,1), rgba(192,133,82,0.85)); }
 @media (max-width: 520px) { .poop-actions .add-poop-btn { font-size: 12px; padding: 13px 4px; } }
 
-/* ===== Monthly heatmap ===== */
-.heatmap-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
-.heatmap-weekday { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; color: var(--text-tertiary); text-align: center; text-transform: uppercase; padding-bottom: 2px; }
-.heatmap-cell { position: relative; aspect-ratio: 1; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--text-tertiary); background: rgba(255,255,255,0.035); }
-.heatmap-cell.empty { background: transparent; }
-.heatmap-cell.lvl1 { background: rgba(192,133,82,0.30); color: var(--text-secondary); }
-.heatmap-cell.lvl2 { background: rgba(192,133,82,0.58); color: #050506; }
-.heatmap-cell.lvl3 { background: rgba(192,133,82,0.92); color: #050506; }
-.heatmap-cell.today { outline: 1.5px solid var(--text-primary); outline-offset: -1.5px; }
-.hc-dots { position: absolute; top: 4px; left: 0; right: 0; display: flex; gap: 2px; align-items: center; justify-content: center; }
-.hc-dot { width: 3px; height: 3px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+/* ===== Last 4 weeks ===== */
+.l4w-weekday-header { display: grid; grid-template-columns: 46px repeat(7, 1fr) 24px; gap: 2px; margin: 6px 0 6px; }
+.l4w-weekday-header span { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); text-align: center; }
+.l4w-weeks { display: flex; flex-direction: column; gap: 2px; }
+.l4w-week-row { display: grid; grid-template-columns: 46px repeat(7, 1fr) 24px; align-items: center; gap: 2px; border-radius: 12px; padding: 4px 0; }
+.l4w-week-row.current { background: rgba(255,255,255,0.05); }
+.l4w-week-label { font-size: 9.5px; font-weight: 600; line-height: 1.25; color: var(--text-tertiary); padding-left: 2px; }
+.l4w-week-row.current .l4w-week-label { color: var(--text-secondary); font-weight: 700; }
+.l4w-week-total { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-align: right; padding-right: 2px; font-variant-numeric: tabular-nums; }
+.l4w-week-row.current .l4w-week-total { color: var(--text-primary); }
+
+.l4w-day {
+  min-height: 44px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border: none; background: transparent; border-radius: 10px; cursor: pointer; padding: 0; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.l4w-day-num { font-size: 12px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.l4w-day.empty-day .l4w-day-num { color: var(--text-tertiary); }
+.l4w-day.weak .l4w-day-num { color: rgba(118,116,110,0.45); }
+.l4w-day-dots { display: flex; gap: 2px; height: 4px; align-items: center; justify-content: center; }
+.l4w-day-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--poop); }
+.l4w-day-count { font-size: 9px; font-weight: 800; color: var(--poop); }
+.l4w-day.today { background: var(--poop); }
+.l4w-day.today .l4w-day-num { color: #050506; font-weight: 800; }
+.l4w-day.today .l4w-day-dot { background: #050506; }
+.l4w-day.today .l4w-day-count { color: #050506; }
+.l4w-day.blank { min-height: 44px; cursor: default; }
+
+.l4w-stats { display: flex; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07); }
+.l4w-stat { display: flex; flex-direction: column; gap: 3px; }
+.l4w-stat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
+.l4w-stat-num { font-size: 17px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.l4w-hint { margin-top: 10px; font-size: 12px; color: var(--text-tertiary); text-align: center; }
 
 /* ===== Year overview ===== */
 .year-ov-head { position: relative; display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
@@ -317,11 +339,23 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
   <div class="gm-card">
     <div class="month-nav">
-      <button class="month-nav-btn" id="monthPrevBtn" type="button" aria-label="Previous month">‹</button>
-      <div class="card-title" id="monthTitle">This Month</div>
-      <button class="month-nav-btn" id="monthNextBtn" type="button" aria-label="Next month">›</button>
+      <button class="month-nav-btn" id="l4wPrevBtn" type="button" aria-label="Previous month">‹</button>
+      <div class="card-title" id="l4wTitle">This Month</div>
+      <button class="month-nav-btn" id="l4wNextBtn" type="button" aria-label="Next month" disabled>›</button>
     </div>
-    <div class="heatmap-grid" id="heatmapGrid"></div>
+    <div class="l4w-weekday-header">
+      <span></span>
+      <span>m</span><span>d</span><span>w</span><span>d</span><span>v</span><span>z</span><span>z</span>
+      <span></span>
+    </div>
+    <div class="l4w-weeks" id="l4wWeeks"></div>
+    <div class="l4w-stats">
+      <div class="l4w-stat"><div class="l4w-stat-label">maand</div><div class="l4w-stat-num" id="l4wStatTotal">0</div></div>
+      <div class="l4w-stat"><div class="l4w-stat-label">per dag</div><div class="l4w-stat-num" id="l4wStatAvg">0,0</div></div>
+      <div class="l4w-stat"><div class="l4w-stat-label">streak</div><div class="l4w-stat-num" id="l4wStatStreak">0</div></div>
+      <div class="l4w-stat"><div class="l4w-stat-label">lege dagen</div><div class="l4w-stat-num" id="l4wStatEmpty">0</div></div>
+    </div>
+    <div class="l4w-hint" id="l4wHint" style="display:none;">Nog geen entries deze maand — tijd om te loggen.</div>
   </div>
 
   <div class="gm-card">
@@ -469,6 +503,17 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     </div>
 
     <button id="megaSave" class="set-save" type="button">Log Poop</button>
+  </div>
+</div>
+
+<!-- ===== Day detail modal ===== -->
+<div class="modal-bg" id="dayDetailBg">
+  <div class="modal" role="dialog" aria-label="Dag detail">
+    <div class="modal-head">
+      <span class="modal-title" id="dayDetailTitle">—</span>
+      <button class="modal-close" id="dayDetailClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="today-list" id="dayDetailList"></div>
   </div>
 </div>
 
@@ -688,74 +733,163 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     svg.innerHTML = parts.join('');
   }
 
-  /* ---------- Monthly heatmap ---------- */
   function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
-  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const initMonthNow = new Date();
-  let heatmapYear = initMonthNow.getFullYear();
-  let heatmapMonth = initMonthNow.getMonth();
 
-  function renderHeatmap() {
-    const el = document.getElementById('heatmapGrid');
-    const now = new Date();
-    const y = heatmapYear, m = heatmapMonth;
-    const isCurrentMonth = y === now.getFullYear() && m === now.getMonth();
+  /* ---------- This Month (week rows) ---------- */
+  const NL_MONTHS_SHORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const NL_MONTHS_FULL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+  const EN_MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const initL4wNow = new Date();
+  let l4wYear = initL4wNow.getFullYear();
+  let l4wMonth = initL4wNow.getMonth();
+
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+  function mondayOf(d) {
+    const nd = startOfDay(d);
+    const diff = (nd.getDay() + 6) % 7; // days since Monday
+    return addDays(nd, -diff);
+  }
+  function weekLabel(monday) {
+    const sunday = addDays(monday, 6);
+    if (monday.getMonth() === sunday.getMonth()) {
+      return monday.getDate() + '–' + sunday.getDate() + ' ' + NL_MONTHS_SHORT[monday.getMonth()];
+    }
+    return monday.getDate() + ' ' + NL_MONTHS_SHORT[monday.getMonth()] + ' – ' + sunday.getDate() + ' ' + NL_MONTHS_SHORT[sunday.getMonth()];
+  }
+
+  function computeStreak(todayReal) {
+    const hasEntryOn = (d) => {
+      const k = dayKey(d);
+      return state.entries.some((e) => dayKey(new Date(e.ts)) === k);
+    };
+    let cursor = todayReal;
+    if (!hasEntryOn(cursor)) {
+      cursor = addDays(cursor, -1);
+      if (!hasEntryOn(cursor)) return 0;
+    }
+    let streak = 0;
+    while (hasEntryOn(cursor)) { streak++; cursor = addDays(cursor, -1); }
+    return streak;
+  }
+
+  function renderLast4Weeks() {
+    const todayReal = startOfDay(new Date());
+    const y = l4wYear, m = l4wMonth;
+    const isCurrentMonth = y === todayReal.getFullYear() && m === todayReal.getMonth();
     const dim = daysInMonth(y, m);
-    const firstDow = new Date(y, m, 1).getDay();
-    const leadingBlanks = (firstDow + 6) % 7; // Monday-first grid
+    const gridStart = mondayOf(new Date(y, m, 1));
+    const gridEnd = addDays(mondayOf(new Date(y, m, dim)), 6);
+    const weeks = Math.round(((gridEnd - gridStart) / 86400000 + 1) / 7);
 
-    const counts = {};
+    document.getElementById('l4wTitle').textContent = isCurrentMonth ? 'This Month' : EN_MONTHS_FULL[m] + ' ' + y;
+    document.getElementById('l4wNextBtn').disabled = isCurrentMonth;
+
+    let firstLogDate = null;
     state.entries.forEach((e) => {
-      const d = new Date(e.ts);
-      if (d.getFullYear() === y && d.getMonth() === m) counts[d.getDate()] = (counts[d.getDate()] || 0) + 1;
+      const d = startOfDay(new Date(e.ts));
+      if (!firstLogDate || d < firstLogDate) firstLogDate = d;
     });
 
-    document.getElementById('monthTitle').textContent = isCurrentMonth ? 'This Month' : MONTH_NAMES[m] + ' ' + y;
-    document.getElementById('monthNextBtn').disabled = isCurrentMonth;
+    const dayCounts = {};
+    state.entries.forEach((e) => {
+      const k = dayKey(new Date(e.ts));
+      dayCounts[k] = (dayCounts[k] || 0) + 1;
+    });
 
-    let html = '';
-    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((w) => { html += '<div class="heatmap-weekday">' + w + '</div>'; });
-    for (let i = 0; i < leadingBlanks; i++) html += '<div class="heatmap-cell empty"></div>';
-    for (let day = 1; day <= dim; day++) {
-      const c = counts[day] || 0;
-      const lvl = c >= 3 ? 3 : c;
-      const isToday = isCurrentMonth && day === now.getDate();
-      const dots = '<span class="hc-dots">' + '<span class="hc-dot"></span>'.repeat(Math.min(c, 4)) + '</span>';
-      html += '<div class="heatmap-cell lvl' + lvl + (isToday ? ' today' : '') + '" title="' + c + ' entries"><span class="hc-day">' + day + '</span>' + dots + '</div>';
+    let weeksHtml = '';
+    let monthTotal = 0;
+    let emptyDays = 0;
+    for (let w = 0; w < weeks; w++) {
+      const monday = addDays(gridStart, w * 7);
+      let weekTotal = 0;
+      let weekIsCurrent = false;
+      let daysHtml = '';
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(monday, i);
+        const inMonth = d.getFullYear() === y && d.getMonth() === m;
+        if (!inMonth) { daysHtml += '<div class="l4w-day blank"></div>'; continue; }
+
+        const k = dayKey(d);
+        const count = dayCounts[k] || 0;
+        monthTotal += count;
+        weekTotal += count;
+        const isFuture = d > todayReal;
+        const isBeforeHistory = !!firstLogDate && d < firstLogDate;
+        const isWeak = isFuture || isBeforeHistory;
+        const isToday = isCurrentMonth && k === dayKey(todayReal);
+        if (isToday) weekIsCurrent = true;
+        if (!isWeak && count === 0) emptyDays++;
+
+        let inner;
+        if (count === 0) inner = '';
+        else if (count <= 3) inner = '<span class="l4w-day-dots">' + '<span class="l4w-day-dot"></span>'.repeat(count) + '</span>';
+        else inner = '<span class="l4w-day-count">' + count + '</span>';
+
+        const cls = ['l4w-day'];
+        if (isToday) cls.push('today');
+        if (isWeak) cls.push('weak');
+        if (count === 0 && !isWeak) cls.push('empty-day');
+
+        const ariaCount = count === 1 ? '1 entry' : count + ' entries';
+        const ariaLabel = d.getDate() + ' ' + NL_MONTHS_FULL[d.getMonth()] + ', ' + ariaCount;
+
+        daysHtml += '<button type="button" class="' + cls.join(' ') + '" data-date="' + k + '" aria-label="' + ariaLabel + '">'
+          + '<span class="l4w-day-num">' + d.getDate() + '</span>' + inner + '</button>';
+      }
+      const label = weekIsCurrent ? 'deze week' : weekLabel(monday);
+      weeksHtml += '<div class="l4w-week-row' + (weekIsCurrent ? ' current' : '') + '">'
+        + '<div class="l4w-week-label">' + label + '</div>'
+        + daysHtml
+        + '<div class="l4w-week-total">' + weekTotal + '</div>'
+        + '</div>';
     }
-    el.innerHTML = html;
+    document.getElementById('l4wWeeks').innerHTML = weeksHtml;
+    document.querySelectorAll('#l4wWeeks .l4w-day').forEach((btn) => {
+      btn.addEventListener('click', () => openDayDetail(btn.dataset.date));
+    });
+
+    const streak = computeStreak(todayReal);
+    const avg = (monthTotal / dim).toFixed(1).replace('.', ',');
+    document.getElementById('l4wStatTotal').textContent = monthTotal;
+    document.getElementById('l4wStatAvg').textContent = avg;
+    document.getElementById('l4wStatStreak').textContent = streak;
+    document.getElementById('l4wStatEmpty').textContent = emptyDays;
+    document.getElementById('l4wHint').style.display = monthTotal === 0 ? 'block' : 'none';
   }
 
-  function goToPrevMonth() {
-    heatmapMonth--;
-    if (heatmapMonth < 0) { heatmapMonth = 11; heatmapYear--; }
-    renderHeatmap();
-  }
-  function goToNextMonth() {
+  document.getElementById('l4wPrevBtn').addEventListener('click', () => {
+    l4wMonth--;
+    if (l4wMonth < 0) { l4wMonth = 11; l4wYear--; }
+    renderLast4Weeks();
+  });
+  document.getElementById('l4wNextBtn').addEventListener('click', () => {
     const now = new Date();
-    if (heatmapYear === now.getFullYear() && heatmapMonth === now.getMonth()) return;
-    heatmapMonth++;
-    if (heatmapMonth > 11) { heatmapMonth = 0; heatmapYear++; }
-    renderHeatmap();
-  }
-  document.getElementById('monthPrevBtn').addEventListener('click', goToPrevMonth);
-  document.getElementById('monthNextBtn').addEventListener('click', goToNextMonth);
+    if (l4wYear === now.getFullYear() && l4wMonth === now.getMonth()) return;
+    l4wMonth++;
+    if (l4wMonth > 11) { l4wMonth = 0; l4wYear++; }
+    renderLast4Weeks();
+  });
 
-  (function setupHeatmapSwipe() {
-    const el = document.getElementById('heatmapGrid');
-    let startX = 0, startY = 0, tracking = false;
-    el.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX; startY = e.touches[0].clientY; tracking = true;
-    }, { passive: true });
-    el.addEventListener('touchend', (e) => {
-      if (!tracking) return;
-      tracking = false;
-      const dx = e.changedTouches[0].clientX - startX;
-      const dy = e.changedTouches[0].clientY - startY;
-      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      if (dx < 0) goToNextMonth(); else goToPrevMonth();
-    }, { passive: true });
-  })();
+  function openDayDetail(dateKeyStr) {
+    const [yy, mm, dd] = dateKeyStr.split('-').map(Number);
+    const dateObj = new Date(yy, mm - 1, dd);
+    const dayEntries = state.entries
+      .filter((e) => dayKey(new Date(e.ts)) === dateKeyStr)
+      .sort((a, b) => new Date(a.ts) - new Date(b.ts));
+
+    document.getElementById('dayDetailTitle').textContent = dateObj.getDate() + ' ' + NL_MONTHS_FULL[dateObj.getMonth()] + ' ' + yy;
+    const el = document.getElementById('dayDetailList');
+    if (!dayEntries.length) {
+      el.innerHTML = '<div class="today-empty">Geen entries op deze dag.</div>';
+    } else {
+      el.innerHTML = dayEntries.map(entryRowHtml).join('');
+      bindEntryRowButtons(el);
+    }
+    document.getElementById('dayDetailBg').classList.add('show');
+  }
+  document.getElementById('dayDetailClose').addEventListener('click', () => document.getElementById('dayDetailBg').classList.remove('show'));
+  document.getElementById('dayDetailBg').addEventListener('click', (e) => { if (e.target.id === 'dayDetailBg') document.getElementById('dayDetailBg').classList.remove('show'); });
 
   /* ---------- Year overview (mini calendars) ---------- */
   const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -882,33 +1016,37 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   }
 
   /* ---------- Recent list ---------- */
+  function entryRowHtml(e) {
+    const d = new Date(e.ts);
+    const stars = e.rating ? '★'.repeat(e.rating) + '☆'.repeat(5 - e.rating) : '';
+    const thumb = e.photo ? '<img class="entry-thumb" src="' + e.photo + '">' : '<div class="entry-thumb placeholder">💩</div>';
+    const extras = [];
+    if (e.bristol) extras.push(e.bristol === 'none' ? 'No BM' : 'Type ' + e.bristol);
+    if (e.mood) { const mo = MOODS.find((x) => x.id === e.mood); if (mo) extras.push(mo.emoji + ' ' + mo.label); }
+    if (e.note) extras.push('"' + (e.note.length > 26 ? e.note.slice(0, 26) + '…' : e.note) + '"');
+    const extraHtml = extras.length ? '<span class="entry-extra">' + extras.join(' · ') + '</span>' : '';
+    return '<div class="entry-row2">' + thumb
+      + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
+      + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + extraHtml + '</div>'
+      + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">i</button>'
+      + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
+  }
+  function bindEntryRowButtons(el) {
+    el.querySelectorAll('.entry-edit').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
+    el.querySelectorAll('.entry-del').forEach((btn) => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
+  }
   function renderRecent() {
     const el = document.getElementById('recentList');
     const list = state.entries.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 20);
     if (!list.length) { el.innerHTML = '<div class="today-empty">No entries yet.</div>'; return; }
-    el.innerHTML = list.map((e) => {
-      const d = new Date(e.ts);
-      const stars = e.rating ? '★'.repeat(e.rating) + '☆'.repeat(5 - e.rating) : '';
-      const thumb = e.photo ? '<img class="entry-thumb" src="' + e.photo + '">' : '<div class="entry-thumb placeholder">💩</div>';
-      const extras = [];
-      if (e.bristol) extras.push(e.bristol === 'none' ? 'No BM' : 'Type ' + e.bristol);
-      if (e.mood) { const mo = MOODS.find((x) => x.id === e.mood); if (mo) extras.push(mo.emoji + ' ' + mo.label); }
-      if (e.note) extras.push('"' + (e.note.length > 26 ? e.note.slice(0, 26) + '…' : e.note) + '"');
-      const extraHtml = extras.length ? '<span class="entry-extra">' + extras.join(' · ') + '</span>' : '';
-      return '<div class="entry-row2">' + thumb
-        + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
-        + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + extraHtml + '</div>'
-        + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">i</button>'
-        + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
-    }).join('');
-    el.querySelectorAll('.entry-edit').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
-    el.querySelectorAll('.entry-del').forEach((btn) => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
+    el.innerHTML = list.map(entryRowHtml).join('');
+    bindEntryRowButtons(el);
   }
 
   function renderAll() {
     renderStats();
     renderChart();
-    renderHeatmap();
+    renderLast4Weeks();
     renderYearOverview();
     renderYearly();
     renderGallery();
