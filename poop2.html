@@ -72,11 +72,21 @@ body::before {
 
 
 /* ===== Stats ===== */
-.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
-@media (max-width: 560px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
-.stat-tile { background: rgba(255,255,255,0.04); border-radius: 14px; padding: 14px 8px; text-align: center; }
-.stat-num { font-size: 22px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.stat-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 4px; }
+.stats-row {
+  display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.stats-row::-webkit-scrollbar { display: none; }
+.stat-tile {
+  flex: 0 0 auto; display: flex; align-items: baseline; gap: 5px; white-space: nowrap;
+  background: rgba(255,255,255,0.06); border-radius: 999px; padding: 9px 14px; scroll-snap-align: start;
+}
+.stat-num { font-size: 15px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 12px; font-weight: 600; text-transform: lowercase; color: var(--text-secondary); }
+.stat-diff { font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-diff.zero { color: var(--text-tertiary); }
+.stat-diff.up { color: var(--poop); }
+.stat-diff.down { color: var(--text-secondary); }
 
 /* ===== Weekly chart (shared look w/ poop.html) ===== */
 .poop-chart-wrap { width: 100%; }
@@ -315,10 +325,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="stats-row">
-    <div class="stat-tile"><div class="stat-num" id="statToday">0</div><div class="stat-label">Today</div></div>
-    <div class="stat-tile"><div class="stat-num" id="statWeek">0</div><div class="stat-label">This Week</div></div>
-    <div class="stat-tile"><div class="stat-num" id="statMonth">0</div><div class="stat-label">This Month</div></div>
-    <div class="stat-tile"><div class="stat-num" id="statAll">0</div><div class="stat-label">All Time</div></div>
+    <div class="stat-tile"><span class="stat-num" id="statToday">0</span><span class="stat-label">today</span></div>
+    <div class="stat-tile"><span class="stat-num" id="statWeek">0</span><span class="stat-label">week</span><span class="stat-diff" id="statWeekDiff"></span></div>
+    <div class="stat-tile"><span class="stat-num" id="statMonth">0</span><span class="stat-label">month</span><span class="stat-diff" id="statMonthDiff"></span></div>
+    <div class="stat-tile"><span class="stat-num" id="statAll">0</span><span class="stat-label">year</span></div>
   </div>
 
   <div class="gm-card">
@@ -648,15 +658,30 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     const now = new Date();
     const todayKey = dayKey(now);
     const weekStart = new Date(now); weekStart.setDate(weekStart.getDate() - 6); weekStart.setHours(0, 0, 0, 0);
+    const prevWeekStart = new Date(weekStart); prevWeekStart.setDate(prevWeekStart.getDate() - 7);
     const monthKey = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
-    let today = 0, week = 0, month = 0;
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthKey = prevMonthDate.getFullYear() + '-' + pad2(prevMonthDate.getMonth() + 1);
+    const yearNow = now.getFullYear();
+
+    let today = 0, week = 0, prevWeek = 0, month = 0, prevMonth = 0, year = 0;
     state.entries.forEach((e) => {
       const d = new Date(e.ts);
       if (dayKey(d) === todayKey) today++;
       if (d >= weekStart) week++;
-      if (d.getFullYear() + '-' + pad2(d.getMonth() + 1) === monthKey) month++;
+      else if (d >= prevWeekStart) prevWeek++;
+      const mk = d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+      if (mk === monthKey) month++;
+      else if (mk === prevMonthKey) prevMonth++;
+      if (d.getFullYear() === yearNow) year++;
     });
-    return { today, week, month, all: state.entries.length };
+    return { today, week, month, year, weekDiff: week - prevWeek, monthDiff: month - prevMonth };
+  }
+
+  function formatDiff(n) {
+    if (n === 0) return { text: '±0', cls: 'zero' };
+    if (n > 0) return { text: '+' + n, cls: 'up' };
+    return { text: '−' + Math.abs(n), cls: 'down' };
   }
 
   function renderStats() {
@@ -664,7 +689,14 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.getElementById('statToday').textContent = s.today;
     document.getElementById('statWeek').textContent = s.week;
     document.getElementById('statMonth').textContent = s.month;
-    document.getElementById('statAll').textContent = s.all;
+    document.getElementById('statAll').textContent = s.year;
+
+    const wd = formatDiff(s.weekDiff);
+    document.getElementById('statWeekDiff').textContent = wd.text;
+    document.getElementById('statWeekDiff').className = 'stat-diff ' + wd.cls;
+    const md = formatDiff(s.monthDiff);
+    document.getElementById('statMonthDiff').textContent = md.text;
+    document.getElementById('statMonthDiff').className = 'stat-diff ' + md.cls;
   }
 
   /* ---------- Weekly chart ---------- */
