@@ -156,12 +156,9 @@ body::before {
 .year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 1px; column-gap: 2px; }
 .year-ov-day { position: relative; height: 13px; display: flex; align-items: center; justify-content: flex-start; font-size: 8px; color: var(--text-tertiary); }
 .year-ov-day.empty { visibility: hidden; }
-.year-ov-day.has-entry { color: #050506; font-weight: 700; }
-.year-ov-day.has-entry::before {
-  content: ''; position: absolute; left: -2px; width: 13px; height: 13px; border-radius: 50%;
-  background: var(--poop); z-index: -1;
-}
-.year-ov-day.today.has-entry::before { box-shadow: 0 0 0 1px var(--text-primary); }
+.year-ov-day-num { display: flex; align-items: center; justify-content: center; }
+.year-ov-day.has-entry .year-ov-day-num { width: 13px; height: 13px; border-radius: 50%; background: var(--poop); color: #050506; font-weight: 700; }
+.year-ov-day.today.has-entry .year-ov-day-num { box-shadow: 0 0 0 1px var(--text-primary); }
 .year-ov-day.today:not(.has-entry) { outline: 1px solid var(--text-primary); outline-offset: -1px; color: var(--text-primary); }
 
 /* ===== Yearly chart ===== */
@@ -944,7 +941,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       for (let day = 1; day <= dim; day++) {
         const hasEntry = !!dayCounts[day];
         const isToday = my === now.getFullYear() && m === now.getMonth() && day === now.getDate();
-        html += '<div class="year-ov-day' + (hasEntry ? ' has-entry' : '') + (isToday ? ' today' : '') + '">' + day + '</div>';
+        html += '<div class="year-ov-day' + (hasEntry ? ' has-entry' : '') + (isToday ? ' today' : '') + '"><span class="year-ov-day-num">' + day + '</span></div>';
       }
       html += '</div></div>';
     });
