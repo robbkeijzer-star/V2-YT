@@ -366,6 +366,13 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="gm-card">
+    <div class="card-title">This Year</div>
+    <div class="yearly-wrap">
+      <svg id="yearlyChart" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="gm-card">
     <div class="year-ov-head">
       <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
       <div class="card-title" id="yearOverviewTitle">2026</div>
@@ -375,13 +382,6 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       </div>
     </div>
     <div class="year-ov-grid" id="yearOverviewGrid"></div>
-  </div>
-
-  <div class="gm-card">
-    <div class="card-title">This Year</div>
-    <div class="yearly-wrap">
-      <svg id="yearlyChart" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
-    </div>
   </div>
 
   <div class="gm-card">
@@ -1070,10 +1070,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     const btn = document.getElementById('recentShowAllBtn');
     const all = state.entries.slice().sort((a, b) => new Date(b.ts) - new Date(a.ts));
     if (!all.length) { el.innerHTML = '<div class="today-empty">No entries yet.</div>'; btn.style.display = 'none'; return; }
-    const list = recentExpanded ? all : all.slice(0, 10);
+    const list = recentExpanded ? all : all.slice(0, 5);
     el.innerHTML = list.map(entryRowHtml).join('');
     bindEntryRowButtons(el);
-    btn.style.display = (!recentExpanded && all.length > 10) ? 'block' : 'none';
+    btn.style.display = (!recentExpanded && all.length > 5) ? 'block' : 'none';
   }
   document.getElementById('recentShowAllBtn').addEventListener('click', () => { recentExpanded = true; renderRecent(); });
 
