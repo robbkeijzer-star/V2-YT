@@ -125,8 +125,8 @@ body::before {
 .year-ov-nav { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; }
 .year-ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 10px; }
 .year-ov-month-title { font-size: 11px; font-weight: 500; text-align: left; text-transform: lowercase; color: var(--text-tertiary); margin-bottom: 10px; letter-spacing: 0.01em; }
-.year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 6px; column-gap: 2px; }
-.year-ov-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--text-tertiary); border-radius: 50%; }
+.year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 1px; column-gap: 2px; }
+.year-ov-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: flex-start; font-size: 8px; color: var(--text-tertiary); border-radius: 50%; }
 .year-ov-day.empty { visibility: hidden; }
 .year-ov-day.has-entry { background: var(--poop); color: #050506; font-weight: 700; }
 .year-ov-day.today { outline: 1px solid var(--text-primary); outline-offset: -1px; color: var(--text-primary); }
