@@ -151,7 +151,7 @@ body::before {
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .year-ov-toggle-pill.active { background: var(--text-primary); color: #050506; }
-.year-ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px 10px; }
+.year-ov-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px 10px; }
 .year-ov-month-title { font-size: 11px; font-weight: 500; text-align: left; text-transform: lowercase; color: var(--text-tertiary); margin-bottom: 10px; letter-spacing: 0.01em; }
 .year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 1px; column-gap: 2px; }
 .year-ov-day { position: relative; height: 13px; display: flex; align-items: center; justify-content: flex-start; font-size: 8px; color: var(--text-tertiary); }
@@ -361,7 +361,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <div class="card-title" id="yearOverviewTitle">2026</div>
       <div class="year-ov-nav">
         <button class="month-nav-btn" id="yearNextBtn" type="button" aria-label="Next year">›</button>
-        <button class="year-ov-toggle-pill" id="yearOverviewToggle" type="button" aria-label="Toggle full year">jaar</button>
+        <button class="year-ov-toggle-pill" id="yearOverviewToggle" type="button" aria-label="Toggle full year">year</button>
       </div>
     </div>
     <div class="year-ov-grid" id="yearOverviewGrid"></div>
@@ -905,11 +905,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     return { dayCounts, total };
   }
 
-  function getLast3MonthsOfYear(y) {
+  function getLast4MonthsOfYear(y) {
     const now = new Date();
     const endMonth = (y === now.getFullYear()) ? now.getMonth() : 11;
     const arr = [];
-    for (let i = 2; i >= 0; i--) {
+    for (let i = 3; i >= 0; i--) {
       const d = new Date(y, endMonth - i, 1);
       arr.push({ y: d.getFullYear(), m: d.getMonth() });
     }
@@ -926,7 +926,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
     const months = yearOverviewExpanded
       ? Array.from({ length: 12 }, (_, m) => ({ y, m }))
-      : getLast3MonthsOfYear(y);
+      : getLast4MonthsOfYear(y);
 
     let html = '';
     months.forEach(({ y: my, m }) => {
