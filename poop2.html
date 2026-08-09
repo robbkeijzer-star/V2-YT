@@ -69,6 +69,8 @@ body::before {
 .month-nav-btn:active { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 .month-nav-btn:disabled { opacity: 0.25; cursor: default; }
 
+.year-ov-toggle-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+
 /* ===== Stats ===== */
 .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
 @media (max-width: 560px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
@@ -116,6 +118,16 @@ body::before {
 .heatmap-cell.today { outline: 1.5px solid var(--text-primary); outline-offset: -1.5px; }
 .hc-dots { position: absolute; top: 4px; left: 0; right: 0; display: flex; gap: 2px; align-items: center; justify-content: center; }
 .hc-dot { width: 3px; height: 3px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+
+/* ===== Year overview ===== */
+.year-ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 6px; }
+.year-ov-month-title { font-size: 10.5px; font-weight: 700; text-align: center; color: var(--text-primary); margin-bottom: 6px; letter-spacing: 0.02em; }
+.year-ov-days { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
+.year-ov-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--text-tertiary); border-radius: 50%; }
+.year-ov-day.empty { visibility: hidden; }
+.year-ov-day.has-entry { background: var(--poop); color: #050506; font-weight: 700; }
+.year-ov-day.today { outline: 1px solid var(--text-primary); outline-offset: -1px; color: var(--text-primary); }
+.year-ov-day.today.has-entry { outline-color: var(--text-primary); }
 
 /* ===== Yearly chart ===== */
 .yearly-wrap svg { width: 100%; height: 160px; display: block; }
@@ -297,6 +309,18 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <button class="month-nav-btn" id="monthNextBtn" type="button" aria-label="Next month">›</button>
     </div>
     <div class="heatmap-grid" id="heatmapGrid"></div>
+  </div>
+
+  <div class="gm-card">
+    <div class="year-ov-toggle-row">
+      <button class="month-nav-btn" id="yearOverviewToggle" type="button" aria-label="Toggle full year">▸</button>
+    </div>
+    <div class="month-nav">
+      <button class="month-nav-btn" id="yearPrevBtn" type="button" aria-label="Previous year">‹</button>
+      <div class="card-title" id="yearOverviewTitle">2026</div>
+      <button class="month-nav-btn" id="yearNextBtn" type="button" aria-label="Next year">›</button>
+    </div>
+    <div class="year-ov-grid" id="yearOverviewGrid"></div>
   </div>
 
   <div class="gm-card">
@@ -720,6 +744,79 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     }, { passive: true });
   })();
 
+  /* ---------- Year overview (mini calendars) ---------- */
+  const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let yearOverviewYear = new Date().getFullYear();
+  let yearOverviewExpanded = false;
+
+  function getMonthEntryData(y, m) {
+    const dayCounts = {};
+    let total = 0;
+    state.entries.forEach((e) => {
+      const d = new Date(e.ts);
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        dayCounts[d.getDate()] = (dayCounts[d.getDate()] || 0) + 1;
+        total++;
+      }
+    });
+    return { dayCounts, total };
+  }
+
+  function getLast3Months() {
+    const now = new Date();
+    const arr = [];
+    for (let i = 2; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      arr.push({ y: d.getFullYear(), m: d.getMonth() });
+    }
+    return arr;
+  }
+
+  function renderYearOverview() {
+    const now = new Date();
+    const y = yearOverviewYear;
+
+    document.getElementById('yearOverviewTitle').textContent = y;
+    document.getElementById('yearOverviewToggle').textContent = yearOverviewExpanded ? '▾' : '▸';
+    document.getElementById('yearNextBtn').disabled = y >= now.getFullYear();
+    document.getElementById('yearPrevBtn').style.visibility = yearOverviewExpanded ? 'visible' : 'hidden';
+    document.getElementById('yearNextBtn').style.visibility = yearOverviewExpanded ? 'visible' : 'hidden';
+
+    const months = yearOverviewExpanded
+      ? Array.from({ length: 12 }, (_, m) => ({ y, m }))
+      : getLast3Months();
+
+    let html = '';
+    months.forEach(({ y: my, m }) => {
+      const { dayCounts, total } = getMonthEntryData(my, m);
+      const dim = daysInMonth(my, m);
+      const firstDow = new Date(my, m, 1).getDay();
+      const leadingBlanks = (firstDow + 6) % 7;
+      html += '<div class="year-ov-month">';
+      html += '<div class="year-ov-month-title">' + MONTH_NAMES_SHORT[m] + (total ? ' (' + total + ')' : '') + '</div>';
+      html += '<div class="year-ov-days">';
+      for (let i = 0; i < leadingBlanks; i++) html += '<div class="year-ov-day empty"></div>';
+      for (let day = 1; day <= dim; day++) {
+        const hasEntry = !!dayCounts[day];
+        const isToday = my === now.getFullYear() && m === now.getMonth() && day === now.getDate();
+        html += '<div class="year-ov-day' + (hasEntry ? ' has-entry' : '') + (isToday ? ' today' : '') + '">' + day + '</div>';
+      }
+      html += '</div></div>';
+    });
+    document.getElementById('yearOverviewGrid').innerHTML = html;
+  }
+
+  document.getElementById('yearOverviewToggle').addEventListener('click', () => {
+    yearOverviewExpanded = !yearOverviewExpanded;
+    if (!yearOverviewExpanded) yearOverviewYear = new Date().getFullYear();
+    renderYearOverview();
+  });
+  document.getElementById('yearPrevBtn').addEventListener('click', () => { yearOverviewYear--; renderYearOverview(); });
+  document.getElementById('yearNextBtn').addEventListener('click', () => {
+    if (yearOverviewYear >= new Date().getFullYear()) return;
+    yearOverviewYear++; renderYearOverview();
+  });
+
   /* ---------- Yearly bar chart ---------- */
   function renderYearly() {
     const svg = document.getElementById('yearlyChart');
@@ -801,6 +898,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     renderStats();
     renderChart();
     renderHeatmap();
+    renderYearOverview();
     renderYearly();
     renderGallery();
     renderRecent();
