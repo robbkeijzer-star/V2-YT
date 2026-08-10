@@ -630,6 +630,38 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   function fmtDateShort(d) { return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(ctx, now, { freq, start, dur, type, peak, freqEnd, detune }) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, now + start);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, now + start + dur);
+    if (detune) osc.detune.value = detune;
+    gain.gain.setValueAtTime(0, now + start);
+    gain.gain.linearRampToValueAtTime(peak != null ? peak : 0.22, now + start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.02);
+  }
+
+  // success arpeggio (ascending major triad)
+  function playCompletionChime() {
+    try {
+      const ctx = getAudioCtx(); const now = ctx.currentTime;
+      playTone(ctx, now, { freq: 1046.5, start: 0, dur: 0.16, type: 'triangle', peak: 0.18 });
+      playTone(ctx, now, { freq: 1318.5, start: 0.07, dur: 0.16, type: 'triangle', peak: 0.18 });
+      playTone(ctx, now, { freq: 1568, start: 0.14, dur: 0.26, type: 'triangle', peak: 0.2 });
+    } catch (e) {}
+  }
+
   function last7Days() {
     const days = [];
     const today = new Date();
@@ -1179,8 +1211,8 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   }
   function closeManualModal() { document.getElementById('manualBg').classList.remove('show'); }
 
-  document.getElementById('addPoopBtn').addEventListener('click', () => addEntry({ ts: new Date() }));
-  document.getElementById('manualPoopBtn').addEventListener('click', openManualModal);
+  document.getElementById('addPoopBtn').addEventListener('click', () => { playCompletionChime(); addEntry({ ts: new Date() }); });
+  document.getElementById('manualPoopBtn').addEventListener('click', () => { playCompletionChime(); openManualModal(); });
   document.getElementById('manualClose').addEventListener('click', closeManualModal);
   document.getElementById('manualBg').addEventListener('click', (e) => { if (e.target.id === 'manualBg') closeManualModal(); });
 
@@ -1313,7 +1345,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   }
   function closeMegaModal() { document.getElementById('megaBg').classList.remove('show'); }
 
-  document.getElementById('megaLogBtn').addEventListener('click', openMegaModal);
+  document.getElementById('megaLogBtn').addEventListener('click', () => { playCompletionChime(); openMegaModal(); });
   document.getElementById('megaClose').addEventListener('click', closeMegaModal);
   document.getElementById('megaBg').addEventListener('click', (e) => { if (e.target.id === 'megaBg') closeMegaModal(); });
 
