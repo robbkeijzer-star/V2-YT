@@ -63,6 +63,43 @@ body::after {
 }
 @keyframes app-live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
 
+/* ===== Fact ticker ===== */
+.fact-ticker-row-wrap { margin-bottom: 14px; }
+.fact-ticker {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.30) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.fact-ticker::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  pointer-events: none; animation: fact-ticker-sweep 8s linear infinite;
+}
+@keyframes fact-ticker-sweep { 0% { left: -40%; } 100% { left: 110%; } }
+.fact-ticker-led { display: inline-flex; align-items: center; }
+.fact-ticker-led-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--poop);
+  box-shadow: 0 0 8px rgba(192,133,82,0.7); animation: fact-led-pulse 1.6s ease-in-out infinite;
+}
+@keyframes fact-led-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.85); } }
+.fact-ticker-label { font-family: var(--font-mono); font-size: 9.5px; font-weight: 800; letter-spacing: 0.18em; color: var(--text-tertiary); }
+.fact-ticker-stage { position: relative; overflow: hidden; flex: 1; height: 20px; }
+.fact-ticker-item {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 1; transition: opacity 0.22s ease;
+}
+.fact-ticker-item.is-fading { opacity: 0; }
+.fact-ticker-meta {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.04); flex-shrink: 0;
+}
+
 .gm-card {
   position: relative; background: rgba(255,255,255,0.04); border-radius: 16px; padding: 20px;
   margin-bottom: 14px; backdrop-filter: blur(24px) saturate(1.2); -webkit-backdrop-filter: blur(24px) saturate(1.2);
@@ -347,6 +384,17 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   <div class="app-title-row">
     <h1 class="app-title">Robin Daily</h1>
     <span class="app-live"><span class="app-live-dot"></span>Poop Tracking</span>
+  </div>
+
+  <div class="fact-ticker-row-wrap">
+    <div class="fact-ticker" id="factTicker" aria-live="polite" aria-atomic="true">
+      <div class="fact-ticker-led"><span class="fact-ticker-led-dot"></span></div>
+      <div class="fact-ticker-label">FACTS</div>
+      <div class="fact-ticker-stage" id="factTickerStage">
+        <div class="fact-ticker-item">Loading…</div>
+      </div>
+      <div class="fact-ticker-meta" id="factTickerMeta">0</div>
+    </div>
   </div>
 
   <div class="stats-row">
@@ -1168,6 +1216,87 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     renderRecent();
   }
 
+  /* ---------- Fact ticker ---------- */
+  function computePoopFacts() {
+    const entries = state.entries;
+    const total = entries.length;
+    if (!total) return { facts: ['🧻 No poops logged yet — get started!'], meta: '0' };
+
+    const sorted = entries.slice().sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    const first = startOfDay(new Date(sorted[0].ts));
+    const today0 = startOfDay(new Date());
+    const daysTracking = Math.round((today0 - first) / 86400000) + 1;
+
+    const daySet = new Set(entries.map((e) => dayKey(new Date(e.ts))));
+    let longest = 0, run = 0, cursor = first;
+    while (cursor <= today0) {
+      if (daySet.has(dayKey(cursor))) { run++; longest = Math.max(longest, run); }
+      else run = 0;
+      cursor = addDays(cursor, 1);
+    }
+    const currentStreak = computeStreak(today0);
+
+    const bristolCounts = {};
+    entries.forEach((e) => { if (e.bristol) bristolCounts[e.bristol] = (bristolCounts[e.bristol] || 0) + 1; });
+    let topBristol = null, topBristolCount = 0;
+    Object.keys(bristolCounts).forEach((k) => { if (bristolCounts[k] > topBristolCount) { topBristol = k; topBristolCount = bristolCounts[k]; } });
+
+    const WD_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
+    entries.forEach((e) => { const d = new Date(e.ts); weekdayCounts[(d.getDay() + 6) % 7]++; });
+    let topWd = 0;
+    weekdayCounts.forEach((c, i) => { if (c > weekdayCounts[topWd]) topWd = i; });
+
+    const photoCount = entries.filter((e) => e.photo).length;
+    const avgPerDay = (total / daysTracking).toFixed(1);
+
+    const facts = [
+      '🧻 ' + total + ' poop' + (total === 1 ? '' : 's') + ' logged in total',
+      '📅 Tracking for ' + daysTracking + ' day' + (daysTracking === 1 ? '' : 's'),
+      '🔥 Current streak: ' + currentStreak + ' day' + (currentStreak === 1 ? '' : 's'),
+      '🏆 Longest streak: ' + longest + ' day' + (longest === 1 ? '' : 's'),
+      '📊 Average ' + avgPerDay + ' per day since you started',
+      '📆 Busiest day: ' + WD_NAMES[topWd]
+    ];
+    if (topBristol) {
+      const bt = BRISTOL_TYPES.find((x) => x.id === topBristol);
+      facts.push('💩 Most common type: ' + (bt ? bt.label : 'Type ' + topBristol));
+    }
+    if (photoCount) facts.push('📸 ' + photoCount + ' photo' + (photoCount === 1 ? '' : 's') + ' taken');
+
+    return { facts, meta: String(total) };
+  }
+
+  const factStage = document.getElementById('factTickerStage');
+  const factMeta = document.getElementById('factTickerMeta');
+  let factCycleIdx = 0;
+  let factTickerTimer = null;
+  let factFirstTick = true;
+
+  function factTick() {
+    const { facts, meta } = computePoopFacts();
+    if (factCycleIdx >= facts.length) factCycleIdx = 0;
+    const text = facts[factCycleIdx];
+    factCycleIdx = (factCycleIdx + 1) % facts.length;
+    factMeta.textContent = meta;
+
+    let item = factStage.querySelector('.fact-ticker-item');
+    if (!item) {
+      item = document.createElement('div');
+      item.className = 'fact-ticker-item';
+      factStage.appendChild(item);
+    }
+    const apply = () => { item.textContent = text; item.classList.remove('is-fading'); };
+    if (factFirstTick) { apply(); factFirstTick = false; return; }
+    item.classList.add('is-fading');
+    setTimeout(apply, 220);
+  }
+  function startFactTicker() {
+    factTick();
+    if (factTickerTimer) clearInterval(factTickerTimer);
+    factTickerTimer = setInterval(factTick, 5000);
+  }
+
   /* ---------- Manual modal ---------- */
   function updateStars() {
     document.querySelectorAll('#ratingRow .star-btn').forEach((b) => {
@@ -1412,6 +1541,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
   window.addEventListener('resize', () => { renderChart(); renderYearly(); });
   renderAll();
+  startFactTicker();
 })();
 </script>
 </body>
