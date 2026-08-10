@@ -175,7 +175,7 @@ body::before {
 .yearly-wrap svg { width: 100%; height: 160px; display: block; }
 
 /* ===== Gallery ===== */
-.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
 .gallery-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
 .gallery-empty { grid-column: 1/-1; font-size: 13px; color: var(--text-tertiary); }
 
@@ -1092,7 +1092,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   /* ---------- Gallery ---------- */
   function renderGallery() {
     const el = document.getElementById('galleryGrid');
-    const withPhotos = state.entries.filter((e) => e.photo).sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    const withPhotos = state.entries.filter((e) => e.photo).sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 8);
     if (!withPhotos.length) { el.innerHTML = '<div class="gallery-empty">No photos yet.</div>'; return; }
     el.innerHTML = withPhotos.map((e) => '<img class="gallery-thumb" src="' + e.photo + '" data-id="' + e.id + '">').join('');
     el.querySelectorAll('.gallery-thumb').forEach((img) => {
