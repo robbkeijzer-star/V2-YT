@@ -133,6 +133,8 @@ body::after {
   flex: 0 0 auto; display: flex; align-items: baseline; gap: 5px; white-space: nowrap;
   background: rgba(255,255,255,0.06); border-radius: 999px; padding: 9px 14px; scroll-snap-align: start;
 }
+.stat-tile-link { border: none; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.stat-tile-link:active { background: rgba(255,255,255,0.12); }
 .stat-num { font-size: 7px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .stat-label { font-size: 7px; font-weight: 600; text-transform: lowercase; color: var(--text-secondary); }
 .stat-diff { font-size: 7px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -400,7 +402,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   <div class="stats-row">
     <div class="stat-tile"><span class="stat-num" id="statToday">0</span><span class="stat-label">today</span></div>
     <div class="stat-tile"><span class="stat-num" id="statWeek">0</span><span class="stat-label">week</span><span class="stat-diff" id="statWeekDiff"></span></div>
-    <div class="stat-tile"><span class="stat-num" id="statMonth">0</span><span class="stat-label">month</span><span class="stat-diff" id="statMonthDiff"></span></div>
+    <button type="button" class="stat-tile stat-tile-link" id="statMonthTile"><span class="stat-num" id="statMonth">0</span><span class="stat-label">month</span><span class="stat-diff" id="statMonthDiff"></span></button>
     <div class="stat-tile"><span class="stat-num" id="statAll">0</span><span class="stat-label">year</span></div>
   </div>
 
@@ -417,7 +419,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     <button id="addPoopBtn" class="add-poop-btn" type="button">+ Add Poop</button>
   </div>
 
-  <div class="gm-card">
+  <div class="gm-card" id="l4wCard">
     <div class="month-nav">
       <button class="month-nav-btn" id="l4wPrevBtn" type="button" aria-label="Previous month">‹</button>
       <div class="card-title" id="l4wTitle">This Month</div>
@@ -1027,6 +1029,15 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     l4wMonth++;
     if (l4wMonth > 11) { l4wMonth = 0; l4wYear++; }
     renderLast4Weeks();
+  });
+
+  document.getElementById('statMonthTile').addEventListener('click', () => {
+    const now = new Date();
+    l4wYear = now.getFullYear();
+    l4wMonth = now.getMonth() - 1;
+    if (l4wMonth < 0) { l4wMonth = 11; l4wYear--; }
+    renderLast4Weeks();
+    document.getElementById('l4wCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   function openDayDetail(dateKeyStr) {
