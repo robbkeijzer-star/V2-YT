@@ -440,6 +440,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     <div class="stat-tile"><span class="stat-num" id="statToday">0</span><span class="stat-label">today</span></div>
     <div class="stat-tile"><span class="stat-num" id="statWeek">0</span><span class="stat-label">week</span><span class="stat-diff" id="statWeekDiff"></span></div>
     <button type="button" class="stat-tile stat-tile-link" id="statMonthTile"><span class="stat-num" id="statMonth">0</span><span class="stat-label">month</span><span class="stat-diff" id="statMonthDiff"></span></button>
+    <div class="stat-tile"><span class="stat-num" id="statLastMonth">0</span><span class="stat-label">last month</span></div>
     <div class="stat-tile"><span class="stat-num" id="statAll">0</span><span class="stat-label">year</span></div>
   </div>
 
@@ -860,7 +861,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       else if (mk === prevMonthKey) prevMonth++;
       if (d.getFullYear() === yearNow) year++;
     });
-    return { today, week, month, year, weekDiff: week - prevWeek, monthDiff: month - prevMonth };
+    return { today, week, month, year, prevMonth, weekDiff: week - prevWeek, monthDiff: month - prevMonth };
   }
 
   function formatDiff(n) {
@@ -873,6 +874,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     const s = computeStats();
     document.getElementById('statToday').textContent = s.today;
     document.getElementById('statWeek').textContent = s.week;
+    document.getElementById('statLastMonth').textContent = s.prevMonth;
     document.getElementById('statMonth').textContent = s.month;
     document.getElementById('statAll').textContent = s.year;
 
