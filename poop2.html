@@ -279,16 +279,19 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 .bristol-item.active .bristol-btn { border-color: var(--poop); box-shadow: 0 0 0 2px rgba(192,133,82,0.35); }
 .bristol-desc { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.03); font-size: 12.5px; color: var(--text-secondary); min-height: 18px; }
 
-.color-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.color-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 14px 8px; margin-bottom: 14px; }
+.color-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.color-item-label { font-size: 9.5px; font-weight: 600; color: var(--text-tertiary); text-align: center; line-height: 1.15; }
+.color-item.active .color-item-label { color: var(--text-primary); }
 .color-swatch {
-  position: relative; width: 34px; height: 34px; border-radius: 50%;
+  position: relative; width: 44px; height: 44px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.14); cursor: pointer;
   display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
 }
 .color-swatch.none { background: transparent; border-style: dashed; }
-.color-swatch .check { display: none; color: #fff; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-.color-swatch.active .check { display: block; }
-.color-swatch.active { border-color: var(--text-primary); }
+.color-swatch .check { display: none; color: #fff; font-size: 18px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.color-item.active .color-swatch .check { display: block; }
+.color-item.active .color-swatch { border-color: var(--text-primary); }
 
 .size-row { display: flex; gap: 8px; }
 .size-btn {
@@ -310,11 +313,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 .mood-btn .m-label { font-size: 10px; font-weight: 700; }
 .mood-btn.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
 
-.symptom-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.symptom-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .symptom-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 13px 14px; border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.03); color: var(--text-secondary);
-  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .symptom-chip.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
 </style>
@@ -573,11 +576,17 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   ];
   const COLORS = [
     { id: 'default', hex: null, label: 'Default' },
-    { id: 'brown', hex: '#8B5E3C', label: 'Brown' },
-    { id: 'darkred', hex: '#6B1E23', label: 'Dark Red' },
-    { id: 'olive', hex: '#8A8B3F', label: 'Olive' },
-    { id: 'black', hex: '#1A1A1A', label: 'Black' },
-    { id: 'tan', hex: '#D8C9A3', label: 'Tan' }
+    { id: 'brown', hex: '#6B4226', label: 'Brown' },
+    { id: 'rainbowbrown', hex: '#7A4A35', label: 'Rainbow Brown' },
+    { id: 'peanutbutter', hex: '#A97C3F', label: 'Peanut butter' },
+    { id: 'yellowgreenbrown', hex: '#8C7A3A', label: 'Yellow green Brown' },
+    { id: 'streaksofred', hex: '#6B3A2E', label: 'Streaks of red' },
+    { id: 'chalkygrey', hex: '#A9A891', label: 'Chalky-grey' },
+    { id: 'yellowgreen', hex: '#ACA232', label: 'Yellow/Slightly green' },
+    { id: 'brightgreen', hex: '#6E8C1F', label: 'Bright green' },
+    { id: 'darkgreen', hex: '#35401F', label: 'Dark green' },
+    { id: 'greenishblack', hex: '#1B1E12', label: 'Greenish black' },
+    { id: 'red', hex: '#A31F35', label: 'Red' }
   ];
   const SIZES = [
     { id: 'default', label: 'Default', scale: 0.8 },
@@ -597,7 +606,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     { id: 'burning', emoji: '🔥', label: 'Burning' },
     { id: 'undigested', emoji: '🌽', label: 'Undigested' },
     { id: 'normalsmell', emoji: '👃', label: 'Normal smell' },
-    { id: 'badsmell', emoji: '🤢', label: 'Bad smell' }
+    { id: 'badsmell', emoji: '🤢', label: 'Bad smell' },
+    { id: 'blood', emoji: '🩸', label: 'Blood' },
+    { id: 'bloating', emoji: '🎈', label: 'Bloating' },
+    { id: 'urgency', emoji: '⏰', label: 'Urgency' }
   ];
 
   let megaBristol = null, megaColor = null, megaSize = null, megaMood = null;
@@ -1149,7 +1161,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.querySelectorAll('#bristolGrid .bristol-item').forEach((b) => b.classList.toggle('active', b.querySelector('.bristol-btn').dataset.id === megaBristol));
     const bt = BRISTOL_TYPES.find((x) => x.id === megaBristol);
     document.getElementById('bristolDesc').textContent = bt ? (bt.label + ' — ' + bt.desc) : 'Pick a type to see its description.';
-    document.querySelectorAll('#colorRow .color-swatch').forEach((b) => b.classList.toggle('active', b.dataset.id === megaColor));
+    document.querySelectorAll('#colorRow .color-item').forEach((b) => b.classList.toggle('active', b.querySelector('.color-swatch').dataset.id === megaColor));
     document.querySelectorAll('#sizeRow .size-btn').forEach((b) => b.classList.toggle('active', b.dataset.id === megaSize));
     document.querySelectorAll('#moodRow .mood-btn').forEach((b) => b.classList.toggle('active', b.dataset.id === megaMood));
     document.querySelectorAll('#symptomRow .symptom-chip').forEach((b) => b.classList.toggle('active', megaSymptoms.includes(b.dataset.id)));
@@ -1217,12 +1229,12 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   function buildColorRow() {
     const el = document.getElementById('colorRow');
     el.innerHTML = COLORS.map((c) =>
-      '<button type="button" class="color-swatch' + (c.hex ? '' : ' none') + '" data-id="' + c.id + '" style="' + (c.hex ? 'background:' + c.hex + ';' : '') + '" title="' + c.label + '"><span class="check">✓</span></button>'
+      '<div class="color-item"><button type="button" class="color-swatch' + (c.hex ? '' : ' none') + '" data-id="' + c.id + '" style="' + (c.hex ? 'background:' + c.hex + ';' : '') + '"><span class="check">✓</span></button><span class="color-item-label">' + c.label + '</span></div>'
     ).join('');
     el.querySelectorAll('.color-swatch').forEach((btn) => {
       btn.addEventListener('click', () => {
         megaColor = btn.dataset.id;
-        el.querySelectorAll('.color-swatch').forEach((b) => b.classList.toggle('active', b === btn));
+        el.querySelectorAll('.color-item').forEach((it) => it.classList.toggle('active', it.contains(btn)));
       });
     });
   }
@@ -1280,7 +1292,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     megaSymptoms = []; megaPhoto = null; megaRating = 0;
     document.getElementById('megaNote').value = '';
     document.getElementById('bristolDesc').textContent = 'Pick a type to see its description.';
-    document.querySelectorAll('#bristolGrid .bristol-item, #colorRow .color-swatch, #sizeRow .size-btn, #moodRow .mood-btn, #symptomRow .symptom-chip')
+    document.querySelectorAll('#bristolGrid .bristol-item, #colorRow .color-item, #sizeRow .size-btn, #moodRow .mood-btn, #symptomRow .symptom-chip')
       .forEach((b) => b.classList.remove('active'));
     document.getElementById('megaPhotoPreviewImg').style.display = 'none';
     document.getElementById('megaPhotoPreviewText').style.display = 'block';
