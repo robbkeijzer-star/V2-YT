@@ -245,10 +245,9 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 .l4w-stat { display: flex; flex-direction: column; gap: 2px; }
 .l4w-stat-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
 .l4w-stat-num { font-size: 14px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.l4w-stat-vac-row { display: flex; align-items: center; gap: 6px; }
-.l4w-vac-btn {
-  width: 18px; height: 18px; border-radius: 6px; border: 1px solid rgba(192,133,82,0.35);
-  background: rgba(192,133,82,0.12); font-size: 10px; line-height: 1; cursor: pointer; padding: 0;
+.l4w-vac-btn-main {
+  width: 22px; height: 22px; border-radius: 7px; border: 1px solid rgba(192,133,82,0.35);
+  background: rgba(192,133,82,0.12); font-size: 12px; line-height: 1; cursor: pointer; padding: 0;
   display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
 }
 .l4w-hint { margin-top: 8px; font-size: 11px; color: var(--text-tertiary); text-align: center; }
@@ -289,6 +288,19 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 
 .vacation-danger-row { display: flex; gap: 8px; margin-top: 10px; }
 .vacation-delete-btn { color: #FF6B6B; border-color: rgba(255,107,107,0.35); }
+
+.vac-recent-list { display: flex; flex-direction: column; gap: 8px; }
+.vac-recent-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.vac-recent-item:active { background: rgba(255,255,255,0.06); }
+.vac-recent-flag { font-size: 20px; flex-shrink: 0; }
+.vac-recent-info { min-width: 0; flex: 1; }
+.vac-recent-dates { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.vac-recent-count { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px; }
+.vac-recent-empty { font-size: 12.5px; color: var(--text-tertiary); padding: 4px 0; }
 
 /* ===== Year overview ===== */
 .year-ov-head { position: relative; display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
@@ -526,12 +538,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <div class="l4w-stat"><div class="l4w-stat-label">month</div><div class="l4w-stat-num" id="l4wStatTotal">0</div></div>
       <div class="l4w-stat"><div class="l4w-stat-label">per day</div><div class="l4w-stat-num" id="l4wStatAvg">0.0</div></div>
       <div class="l4w-stat"><div class="l4w-stat-label">streak</div><div class="l4w-stat-num" id="l4wStatStreak">0</div></div>
-      <div class="l4w-stat l4w-stat-vac">
-        <div class="l4w-stat-label">empty days</div>
-        <div class="l4w-stat-vac-row">
-          <div class="l4w-stat-num" id="l4wStatEmpty">0</div>
-          <button class="l4w-vac-btn" id="l4wVacBtn" type="button" aria-label="Add vacation">✈️</button>
-        </div>
+      <div class="l4w-stat"><div class="l4w-stat-label">empty days</div><div class="l4w-stat-num" id="l4wStatEmpty">0</div></div>
+      <div class="l4w-stat">
+        <div class="l4w-stat-label">vacation mode</div>
+        <button class="l4w-vac-btn-main" id="l4wVacBtn" type="button" aria-label="Vacation mode">✈️</button>
       </div>
     </div>
     <div class="l4w-hint" id="l4wHint" style="display:none;">No entries yet this month — time to log.</div>
@@ -709,6 +719,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <span class="modal-title" id="vacationModalTitle">Vacation mode</span>
       <button class="modal-close" id="vacationClose" type="button" aria-label="Close">×</button>
     </div>
+    <div id="vacRecentWrap">
+      <div class="modal-section-title">Recent vacations</div>
+      <div class="vac-recent-list" id="vacRecentList"></div>
+      <div class="modal-divider"></div>
+    </div>
     <div class="field">
       <label class="field-label">Start date</label>
       <input type="date" id="vacationStart" class="set-input">
@@ -719,7 +734,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     </div>
     <div class="field">
       <label class="field-label">Location flag (optional)</label>
-      <input type="text" id="vacationDestination" class="set-input" placeholder="🇮🇹" maxlength="8">
+      <input type="text" id="vacationDestination" class="set-input" placeholder="Tap to add a flag emoji" maxlength="8">
     </div>
     <div class="field">
       <div class="toggle-row">
@@ -733,7 +748,6 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     </div>
     <button id="vacationSave" class="set-save" type="button">Save</button>
     <div class="vacation-danger-row">
-      <button id="vacationEndBtn" class="photo-src-btn" type="button" style="display:none;">End vacation now</button>
       <button id="vacationDeleteBtn" class="photo-src-btn vacation-delete-btn" type="button" style="display:none;">Delete</button>
     </div>
   </div>
@@ -1504,6 +1518,36 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   document.getElementById('vacationEmptyToggle').addEventListener('click', () => setToggle('vacationEmptyToggle', !toggleIsOn('vacationEmptyToggle')));
 
   let editingVacationId = null;
+  function renderVacRecentList() {
+    const el = document.getElementById('vacRecentList');
+    const recent = getVacations()
+      .slice()
+      .sort((a, b) => (a.start < b.start ? 1 : a.start > b.start ? -1 : 0))
+      .slice(0, 3);
+    if (!recent.length) { el.innerHTML = '<div class="vac-recent-empty">No vacations logged yet.</div>'; return; }
+    el.innerHTML = recent.map((v) => {
+      const range = vacationRangeOf(v);
+      const count = state.entries.filter((e) => {
+        const d = startOfDay(new Date(e.ts));
+        return d >= range.start && d <= range.end;
+      }).length;
+      const startTxt = range.start.getDate() + ' ' + EN_MONTHS_SHORT[range.start.getMonth()];
+      const endTxt = range.end.getDate() + ' ' + EN_MONTHS_SHORT[range.end.getMonth()] + ' ' + range.end.getFullYear();
+      const flag = v.destination || '✈️';
+      return '<div class="vac-recent-item" data-vac-id="' + v.id + '">'
+        + '<span class="vac-recent-flag">' + flag + '</span>'
+        + '<div class="vac-recent-info">'
+        + '<div class="vac-recent-dates">' + startTxt + ' – ' + endTxt + '</div>'
+        + '<div class="vac-recent-count">' + count + ' poop' + (count === 1 ? '' : 's') + ' logged</div>'
+        + '</div></div>';
+    }).join('');
+  }
+  document.getElementById('vacRecentList').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-vac-id]');
+    if (!el) return;
+    openVacationModal(el.dataset.vacId);
+  });
+
   function openVacationModal(id) {
     const v = id ? getVacations().find((x) => x.id === id) : null;
     editingVacationId = v ? v.id : null;
@@ -1514,8 +1558,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.getElementById('vacationDestination').value = v ? (v.destination || '') : '';
     setToggle('vacationAvgToggle', v ? !!v.countInAverage : false);
     setToggle('vacationEmptyToggle', v ? !!v.countAsEmpty : false);
-    document.getElementById('vacationEndBtn').style.display = v ? 'block' : 'none';
     document.getElementById('vacationDeleteBtn').style.display = v ? 'block' : 'none';
+    document.getElementById('vacRecentWrap').style.display = v ? 'none' : 'block';
+    if (!v) renderVacRecentList();
     document.getElementById('vacationBg').classList.add('show');
   }
   function closeVacationModal() { document.getElementById('vacationBg').classList.remove('show'); }
@@ -1539,18 +1584,6 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     if (!state.vacations) state.vacations = [];
     const idx = state.vacations.findIndex((v) => v.id === entry.id);
     if (idx >= 0) state.vacations[idx] = entry; else state.vacations.push(entry);
-    save(state);
-    closeVacationModal();
-    renderVacationBar();
-    renderLast4Weeks();
-    renderYearOverview();
-  });
-
-  document.getElementById('vacationEndBtn').addEventListener('click', () => {
-    const v = getVacations().find((x) => x.id === editingVacationId);
-    if (!v) return;
-    const yesterdayKey = dayKey(addDays(startOfDay(new Date()), -1));
-    v.end = v.start > yesterdayKey ? v.start : yesterdayKey;
     save(state);
     closeVacationModal();
     renderVacationBar();
