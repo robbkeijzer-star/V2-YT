@@ -1469,7 +1469,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     const entry = state.entries.find((e) => e.id === id);
     if (!entry) return;
     addEntry({
-      ts: new Date(), photo: entry.photo, rating: entry.rating,
+      ts: new Date(new Date(entry.ts).getTime() + 60000), photo: entry.photo, rating: entry.rating,
       note: entry.note, profile: entry.profile, bristol: entry.bristol,
       color: entry.color, size: entry.size, mood: entry.mood,
       symptoms: (entry.symptoms || []).slice()
