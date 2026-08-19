@@ -206,17 +206,24 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 @media (max-width: 520px) { .poop-actions .add-poop-btn { font-size: 12px; padding: 13px 4px; } }
 
 /* ===== Last 4 weeks ===== */
-.l4w-weekday-header { display: grid; grid-template-columns: 46px repeat(7, 1fr) 24px; gap: 2px; margin: 4px 0 2px; }
+.l4w-weekday-header { display: grid; grid-template-columns: 20px 46px repeat(7, 1fr) 24px; gap: 2px; margin: 4px 0 2px; }
 .l4w-weekday-header span { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); text-align: center; }
 .l4w-weeks { display: flex; flex-direction: column; gap: 1px; }
-.l4w-week-row { display: grid; grid-template-columns: 46px repeat(7, 1fr) 24px; align-items: center; gap: 2px; border-radius: 12px; padding: 0; }
+.l4w-week-row { position: relative; display: grid; grid-template-columns: 20px 46px repeat(7, 1fr) 24px; align-items: center; gap: 2px; border-radius: 12px; padding: 0; }
 .l4w-week-row.current { background: rgba(255,255,255,0.05); }
-.l4w-week-label { font-size: 9px; font-weight: 600; line-height: 1.2; color: var(--text-tertiary); padding-left: 2px; }
+.l4w-plane-col { position: relative; z-index: 1; font-size: 9px; text-align: center; line-height: 1; }
+.l4w-week-label { position: relative; z-index: 1; font-size: 9px; font-weight: 600; line-height: 1.2; color: var(--text-tertiary); padding-left: 2px; }
 .l4w-week-row.current .l4w-week-label { color: var(--text-secondary); font-weight: 700; }
-.l4w-week-total { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-align: right; padding-right: 2px; font-variant-numeric: tabular-nums; }
+.l4w-week-total { position: relative; z-index: 1; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-align: right; padding-right: 2px; font-variant-numeric: tabular-nums; }
 .l4w-week-row.current .l4w-week-total { color: var(--text-primary); }
 
+.l4w-vac-band { position: absolute; top: 0; bottom: 0; z-index: 0; pointer-events: none; background: rgba(192,133,82,0.38); }
+.l4w-vac-band.round-left { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+.l4w-vac-band.round-right { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+.l4w-vac-band.upcoming { background: rgba(192,133,82,0.16); }
+
 .l4w-day {
+  position: relative; z-index: 1;
   min-height: 44px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   border: none; background: transparent; border-radius: 10px; cursor: pointer; padding: 0; font-family: inherit;
   -webkit-tap-highlight-color: transparent;
@@ -227,6 +234,8 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 .l4w-day-dots { display: flex; gap: 2px; height: 4px; align-items: center; justify-content: center; }
 .l4w-day-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--poop); }
 .l4w-day-count { font-size: 9px; font-weight: 800; color: var(--poop); }
+.l4w-day.vac-day .l4w-day-num { color: #F0C9A0; }
+.l4w-day.vac-future .l4w-day-num { color: #A88865; }
 .l4w-day.today { background: var(--poop); }
 .l4w-day.today .l4w-day-num { color: #050506; font-weight: 800; }
 .l4w-day.today .l4w-day-dot { background: #050506; }
@@ -238,6 +247,46 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 .l4w-stat-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
 .l4w-stat-num { font-size: 14px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .l4w-hint { margin-top: 8px; font-size: 11px; color: var(--text-tertiary); text-align: center; }
+
+/* ===== Vacation mode ===== */
+.vac-bar { margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(192,133,82,0.08); border: 1px solid rgba(192,133,82,0.2); }
+.vac-bar-top { display: flex; align-items: center; gap: 6px; }
+.vac-bar-plane { font-size: 13px; flex-shrink: 0; }
+.vac-bar-date {
+  background: none; border: none; padding: 0 1px 2px; font-family: inherit; font-size: 12.5px; font-weight: 700;
+  color: var(--text-primary); cursor: pointer; border-bottom: 1px dashed rgba(250,250,250,0.35);
+  -webkit-tap-highlight-color: transparent;
+}
+.vac-bar-sep { color: var(--text-tertiary); font-size: 12px; }
+.vac-bar-pencil { font-size: 10px; color: var(--text-tertiary); margin-left: 1px; }
+.vac-bar-info {
+  margin-left: auto; width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  border: 1px solid rgba(192,133,82,0.4); background: rgba(192,133,82,0.15); color: var(--poop);
+  font-size: 12px; font-weight: 800; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.vac-bar-sub { margin-top: 4px; font-size: 10.5px; color: var(--text-tertiary); }
+.vac-add-btn {
+  display: flex; align-items: center; gap: 6px; width: 100%; margin-bottom: 12px; padding: 10px 12px;
+  border-radius: 12px; border: 1px dashed rgba(255,255,255,0.14); background: rgba(255,255,255,0.03);
+  color: var(--text-tertiary); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== Toggle switch (vacation modal) ===== */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.toggle-label { font-size: 13px; color: var(--text-secondary); }
+.toggle-switch {
+  width: 42px; height: 24px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06); position: relative; cursor: pointer; padding: 0; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-tertiary); transition: transform 0.15s ease, background 0.15s ease; }
+.toggle-switch.active { background: rgba(192,133,82,0.3); border-color: var(--poop); }
+.toggle-switch.active .toggle-knob { transform: translateX(18px); background: var(--poop); }
+
+.vacation-danger-row { display: flex; gap: 8px; margin-top: 10px; }
+.vacation-delete-btn { color: #FF6B6B; border-color: rgba(255,107,107,0.35); }
 
 /* ===== Year overview ===== */
 .year-ov-head { position: relative; display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
@@ -458,12 +507,26 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="gm-card" id="l4wCard">
+    <div class="vac-bar" id="vacBar" style="display:none;">
+      <div class="vac-bar-top">
+        <span class="vac-bar-plane">✈️</span>
+        <button type="button" class="vac-bar-date" id="vacBarStart">–</button>
+        <span class="vac-bar-sep">–</span>
+        <button type="button" class="vac-bar-date" id="vacBarEnd">–</button>
+        <span class="vac-bar-pencil">✏️</span>
+        <button type="button" class="vac-bar-info" id="vacBarInfo" aria-label="Vacation info">i</button>
+      </div>
+      <div class="vac-bar-sub" id="vacBarSub">vacation mode · logging continues as usual</div>
+    </div>
+    <button type="button" class="vac-add-btn" id="vacAddBtn" style="display:none;">✈️ Add vacation</button>
+
     <div class="month-nav">
       <button class="month-nav-btn" id="l4wPrevBtn" type="button" aria-label="Previous month">‹</button>
       <div class="card-title" id="l4wTitle">This Month</div>
       <button class="month-nav-btn" id="l4wNextBtn" type="button" aria-label="Next month" disabled>›</button>
     </div>
     <div class="l4w-weekday-header">
+      <span></span>
       <span></span>
       <span>m</span><span>t</span><span>w</span><span>t</span><span>f</span><span>s</span><span>s</span>
       <span></span>
@@ -640,6 +703,43 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     <a class="menu-link" href="caffeine.html"><span class="menu-link-icon">☕</span>Caffeine</a>
     <a class="menu-link" href="poop.html"><span class="menu-link-icon">💩</span>Poop</a>
     <a class="menu-link active" href="poop2.html"><span class="menu-link-icon">📸</span>Poop 2.0</a>
+  </div>
+</div>
+
+<!-- ===== Vacation modal ===== -->
+<div class="modal-bg" id="vacationBg">
+  <div class="modal" role="dialog" aria-label="Vacation mode">
+    <div class="modal-head">
+      <span class="modal-title" id="vacationModalTitle">Vacation mode</span>
+      <button class="modal-close" id="vacationClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="field">
+      <label class="field-label">Start date</label>
+      <input type="date" id="vacationStart" class="set-input">
+    </div>
+    <div class="field">
+      <label class="field-label">End date</label>
+      <input type="date" id="vacationEnd" class="set-input">
+    </div>
+    <div class="field">
+      <label class="field-label">Destination (optional)</label>
+      <input type="text" id="vacationDestination" class="set-input" placeholder="Where to?">
+    </div>
+    <div class="field">
+      <div class="toggle-row">
+        <span class="toggle-label">Count in daily average</span>
+        <button type="button" class="toggle-switch" id="vacationAvgToggle" role="switch" aria-checked="false"><span class="toggle-knob"></span></button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Count as empty days</span>
+        <button type="button" class="toggle-switch" id="vacationEmptyToggle" role="switch" aria-checked="false"><span class="toggle-knob"></span></button>
+      </div>
+    </div>
+    <button id="vacationSave" class="set-save" type="button">Save</button>
+    <div class="vacation-danger-row">
+      <button id="vacationEndBtn" class="photo-src-btn" type="button" style="display:none;">End vacation now</button>
+      <button id="vacationDeleteBtn" class="photo-src-btn vacation-delete-btn" type="button" style="display:none;">Delete</button>
+    </div>
   </div>
 </div>
 
@@ -973,18 +1073,35 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     return monday.getDate() + ' ' + EN_MONTHS_SHORT[monday.getMonth()] + ' – ' + sunday.getDate() + ' ' + EN_MONTHS_SHORT[sunday.getMonth()];
   }
 
+  /* ---------- Vacation mode ---------- */
+  function parseDayKey(k) { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); }
+  function getVacation() { return state.vacation || null; }
+  function vacationRange() {
+    const v = getVacation();
+    if (!v) return null;
+    return { start: parseDayKey(v.start), end: parseDayKey(v.end) };
+  }
+  function isVacationDay(d, range) { return !!range && d >= range.start && d <= range.end; }
+
   function computeStreak(todayReal) {
+    const vac = vacationRange();
     const hasEntryOn = (d) => {
       const k = dayKey(d);
       return state.entries.some((e) => dayKey(new Date(e.ts)) === k);
     };
     let cursor = todayReal;
-    if (!hasEntryOn(cursor)) {
-      cursor = addDays(cursor, -1);
-      if (!hasEntryOn(cursor)) return 0;
-    }
     let streak = 0;
-    while (hasEntryOn(cursor)) { streak++; cursor = addDays(cursor, -1); }
+    let guard = 0;
+    while (guard++ < 3660) {
+      if (hasEntryOn(cursor)) {
+        streak++;
+      } else {
+        const isToday = cursor.getTime() === todayReal.getTime();
+        const vacSkip = isVacationDay(cursor, vac);
+        if (!isToday && !vacSkip) break;
+      }
+      cursor = addDays(cursor, -1);
+    }
     return streak;
   }
 
@@ -1012,13 +1129,19 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       dayCounts[k] = (dayCounts[k] || 0) + 1;
     });
 
+    const vac = getVacation();
+    const vacRange = vacationRange();
+    const vacUpcoming = !!(vacRange && vacRange.start > todayReal);
+
     let weeksHtml = '';
     let monthTotal = 0;
     let emptyDays = 0;
+    let vacDaysInMonth = 0;
     for (let w = 0; w < weeks; w++) {
       const monday = addDays(gridStart, w * 7);
       let weekTotal = 0;
       let weekIsCurrent = false;
+      let rowHasVac = false;
       let daysHtml = '';
       for (let i = 0; i < 7; i++) {
         const d = addDays(monday, i);
@@ -1033,8 +1156,12 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
         const isBeforeHistory = !!firstLogDate && d < firstLogDate;
         const isWeak = isFuture || isBeforeHistory;
         const isToday = isCurrentMonth && k === dayKey(todayReal);
+        const isVac = isVacationDay(d, vacRange);
         if (isToday) weekIsCurrent = true;
-        if (!isWeak && count === 0) emptyDays++;
+        if (isVac) { rowHasVac = true; vacDaysInMonth++; }
+
+        const vacExcludesEmpty = isVac && !(vac && vac.countAsEmpty);
+        if (!isWeak && count === 0 && !vacExcludesEmpty) emptyDays++;
 
         let inner;
         if (count === 0) inner = '';
@@ -1043,29 +1170,51 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 
         const cls = ['l4w-day'];
         if (isToday) cls.push('today');
-        if (isWeak) cls.push('weak');
-        if (count === 0 && !isWeak) cls.push('empty-day');
+        if (isWeak && !isVac) cls.push('weak');
+        if (count === 0 && !isWeak && !isVac) cls.push('empty-day');
+        if (isVac) {
+          cls.push('vac-day');
+          if (d >= todayReal && !isToday) cls.push('vac-future');
+        }
 
         const ariaCount = count === 1 ? '1 entry' : count + ' entries';
-        const ariaLabel = d.getDate() + ' ' + EN_MONTHS_FULL[d.getMonth()] + ', ' + ariaCount;
+        let ariaLabel = d.getDate() + ' ' + EN_MONTHS_FULL[d.getMonth()] + ', ' + ariaCount;
+        if (isVac) ariaLabel += ', vacation';
 
         daysHtml += '<button type="button" class="' + cls.join(' ') + '" data-date="' + k + '" aria-label="' + ariaLabel + '">'
           + '<span class="l4w-day-num">' + d.getDate() + '</span>' + inner + '</button>';
       }
       const label = weekIsCurrent ? 'this week' : weekLabel(monday);
+      const planeCell = '<div class="l4w-plane-col">' + (rowHasVac ? '✈️' : '') + '</div>';
+      const bandCell = rowHasVac ? '<div class="l4w-vac-band' + (vacUpcoming ? ' upcoming' : '') + '"></div>' : '';
       weeksHtml += '<div class="l4w-week-row' + (weekIsCurrent ? ' current' : '') + '">'
+        + planeCell
         + '<div class="l4w-week-label">' + label + '</div>'
         + daysHtml
         + '<div class="l4w-week-total">' + weekTotal + '</div>'
+        + bandCell
         + '</div>';
     }
     document.getElementById('l4wWeeks').innerHTML = weeksHtml;
     document.querySelectorAll('#l4wWeeks .l4w-day').forEach((btn) => {
       btn.addEventListener('click', () => openDayDetail(btn.dataset.date));
     });
+    document.querySelectorAll('#l4wWeeks .l4w-week-row').forEach((row) => {
+      const band = row.querySelector('.l4w-vac-band');
+      if (!band) return;
+      const vacButtons = Array.from(row.querySelectorAll('.l4w-day.vac-day'));
+      if (!vacButtons.length) { band.remove(); return; }
+      const first = vacButtons[0], last = vacButtons[vacButtons.length - 1];
+      band.style.left = first.offsetLeft + 'px';
+      band.style.width = (last.offsetLeft + last.offsetWidth - first.offsetLeft) + 'px';
+      band.classList.toggle('round-left', !!vac && first.dataset.date === vac.start);
+      band.classList.toggle('round-right', !!vac && last.dataset.date === vac.end);
+    });
 
     const streak = computeStreak(todayReal);
-    const avg = (monthTotal / dim).toFixed(1);
+    const excludeVacFromAvg = !!(vac && !vac.countInAverage);
+    const effectiveDays = Math.max(1, dim - (excludeVacFromAvg ? vacDaysInMonth : 0));
+    const avg = (monthTotal / effectiveDays).toFixed(1);
     document.getElementById('l4wStatTotal').textContent = monthTotal;
     document.getElementById('l4wStatAvg').textContent = avg;
     document.getElementById('l4wStatStreak').textContent = streak;
@@ -1275,12 +1424,107 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   function renderAll() {
     renderStats();
     renderChart();
+    renderVacationBar();
     renderLast4Weeks();
     renderYearOverview();
     renderYearly();
     renderGallery();
     renderRecent();
   }
+
+  function renderVacationBar() {
+    const v = getVacation();
+    const todayReal = startOfDay(new Date());
+    const bar = document.getElementById('vacBar');
+    const addBtn = document.getElementById('vacAddBtn');
+    const range = v ? { start: parseDayKey(v.start), end: parseDayKey(v.end) } : null;
+    const relevant = !!(range && range.end >= todayReal);
+    if (!relevant) {
+      bar.style.display = 'none';
+      addBtn.style.display = 'flex';
+      return;
+    }
+    addBtn.style.display = 'none';
+    bar.style.display = 'block';
+    document.getElementById('vacBarStart').textContent = range.start.getDate() + ' ' + EN_MONTHS_SHORT[range.start.getMonth()];
+    document.getElementById('vacBarEnd').textContent = range.end.getDate() + ' ' + EN_MONTHS_SHORT[range.end.getMonth()];
+    const upcoming = range.start > todayReal;
+    if (upcoming) {
+      const daysUntil = Math.round((range.start - todayReal) / 86400000);
+      document.getElementById('vacBarSub').textContent = 'starts in ' + daysUntil + ' day' + (daysUntil === 1 ? '' : 's');
+    } else {
+      document.getElementById('vacBarSub').textContent = 'vacation mode · logging continues as usual';
+    }
+  }
+
+  function setToggle(id, on) {
+    const el = document.getElementById(id);
+    el.classList.toggle('active', on);
+    el.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+  function toggleIsOn(id) { return document.getElementById(id).classList.contains('active'); }
+  document.getElementById('vacationAvgToggle').addEventListener('click', () => setToggle('vacationAvgToggle', !toggleIsOn('vacationAvgToggle')));
+  document.getElementById('vacationEmptyToggle').addEventListener('click', () => setToggle('vacationEmptyToggle', !toggleIsOn('vacationEmptyToggle')));
+
+  function openVacationModal() {
+    const v = getVacation();
+    document.getElementById('vacationModalTitle').textContent = v ? 'Vacation mode' : 'Add vacation';
+    const today = new Date();
+    document.getElementById('vacationStart').value = v ? v.start : dayKey(today);
+    document.getElementById('vacationEnd').value = v ? v.end : dayKey(addDays(today, 6));
+    document.getElementById('vacationDestination').value = v ? (v.destination || '') : '';
+    setToggle('vacationAvgToggle', v ? !!v.countInAverage : false);
+    setToggle('vacationEmptyToggle', v ? !!v.countAsEmpty : false);
+    document.getElementById('vacationEndBtn').style.display = v ? 'block' : 'none';
+    document.getElementById('vacationDeleteBtn').style.display = v ? 'block' : 'none';
+    document.getElementById('vacationBg').classList.add('show');
+  }
+  function closeVacationModal() { document.getElementById('vacationBg').classList.remove('show'); }
+
+  document.getElementById('vacBarInfo').addEventListener('click', openVacationModal);
+  document.getElementById('vacBarStart').addEventListener('click', openVacationModal);
+  document.getElementById('vacBarEnd').addEventListener('click', openVacationModal);
+  document.getElementById('vacAddBtn').addEventListener('click', openVacationModal);
+  document.getElementById('vacationClose').addEventListener('click', closeVacationModal);
+  document.getElementById('vacationBg').addEventListener('click', (e) => { if (e.target.id === 'vacationBg') closeVacationModal(); });
+
+  document.getElementById('vacationSave').addEventListener('click', () => {
+    const start = document.getElementById('vacationStart').value;
+    const end = document.getElementById('vacationEnd').value;
+    if (!start || !end || end < start) return;
+    const existing = getVacation();
+    state.vacation = {
+      id: existing ? existing.id : uid(),
+      start: start,
+      end: end,
+      destination: document.getElementById('vacationDestination').value.trim(),
+      countInAverage: toggleIsOn('vacationAvgToggle'),
+      countAsEmpty: toggleIsOn('vacationEmptyToggle')
+    };
+    save(state);
+    closeVacationModal();
+    renderVacationBar();
+    renderLast4Weeks();
+  });
+
+  document.getElementById('vacationEndBtn').addEventListener('click', () => {
+    const v = getVacation();
+    if (!v) return;
+    const yesterdayKey = dayKey(addDays(startOfDay(new Date()), -1));
+    v.end = v.start > yesterdayKey ? v.start : yesterdayKey;
+    save(state);
+    closeVacationModal();
+    renderVacationBar();
+    renderLast4Weeks();
+  });
+
+  document.getElementById('vacationDeleteBtn').addEventListener('click', () => {
+    state.vacation = null;
+    save(state);
+    closeVacationModal();
+    renderVacationBar();
+    renderLast4Weeks();
+  });
 
   /* ---------- Fact ticker ---------- */
   function computePoopFacts() {
