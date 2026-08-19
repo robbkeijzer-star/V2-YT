@@ -206,12 +206,11 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 @media (max-width: 520px) { .poop-actions .add-poop-btn { font-size: 12px; padding: 13px 4px; } }
 
 /* ===== Last 4 weeks ===== */
-.l4w-weekday-header { display: grid; grid-template-columns: 20px 46px repeat(7, 1fr) 24px; gap: 2px; margin: 4px 0 2px; }
+.l4w-weekday-header { display: grid; grid-template-columns: 46px repeat(7, 1fr) 24px; gap: 2px; margin: 4px 0 2px; }
 .l4w-weekday-header span { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); text-align: center; }
 .l4w-weeks { display: flex; flex-direction: column; gap: 1px; }
-.l4w-week-row { position: relative; display: grid; grid-template-columns: 20px 46px repeat(7, 1fr) 24px; align-items: center; gap: 2px; border-radius: 12px; padding: 0; }
+.l4w-week-row { position: relative; display: grid; grid-template-columns: 46px repeat(7, 1fr) 24px; align-items: center; gap: 2px; border-radius: 12px; padding: 0; }
 .l4w-week-row.current { background: rgba(255,255,255,0.05); }
-.l4w-plane-col { position: relative; z-index: 1; font-size: 9px; text-align: center; line-height: 1; }
 .l4w-week-label { position: relative; z-index: 1; font-size: 9px; font-weight: 600; line-height: 1.2; color: var(--text-tertiary); padding-left: 2px; }
 .l4w-week-row.current .l4w-week-label { color: var(--text-secondary); font-weight: 700; }
 .l4w-week-total { position: relative; z-index: 1; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-align: right; padding-right: 2px; font-variant-numeric: tabular-nums; }
@@ -509,10 +508,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   <div class="gm-card" id="l4wCard">
     <div class="vac-bar" id="vacBar" style="display:none;">
       <div class="vac-bar-top">
-        <span class="vac-bar-plane">✈️</span>
         <button type="button" class="vac-bar-date" id="vacBarStart">–</button>
         <span class="vac-bar-sep">–</span>
         <button type="button" class="vac-bar-date" id="vacBarEnd">–</button>
+        <span class="vac-bar-plane">✈️</span>
         <span class="vac-bar-pencil">✏️</span>
         <button type="button" class="vac-bar-info" id="vacBarInfo" aria-label="Vacation info">i</button>
       </div>
@@ -526,7 +525,6 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <button class="month-nav-btn" id="l4wNextBtn" type="button" aria-label="Next month" disabled>›</button>
     </div>
     <div class="l4w-weekday-header">
-      <span></span>
       <span></span>
       <span>m</span><span>t</span><span>w</span><span>t</span><span>f</span><span>s</span><span>s</span>
       <span></span>
@@ -722,8 +720,8 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <input type="date" id="vacationEnd" class="set-input">
     </div>
     <div class="field">
-      <label class="field-label">Destination (optional)</label>
-      <input type="text" id="vacationDestination" class="set-input" placeholder="Where to?">
+      <label class="field-label">Location flag (optional)</label>
+      <input type="text" id="vacationDestination" class="set-input" placeholder="🇮🇹" maxlength="8">
     </div>
     <div class="field">
       <div class="toggle-row">
@@ -1184,11 +1182,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
         daysHtml += '<button type="button" class="' + cls.join(' ') + '" data-date="' + k + '" aria-label="' + ariaLabel + '">'
           + '<span class="l4w-day-num">' + d.getDate() + '</span>' + inner + '</button>';
       }
-      const label = weekIsCurrent ? 'this week' : weekLabel(monday);
-      const planeCell = '<div class="l4w-plane-col">' + (rowHasVac ? '✈️' : '') + '</div>';
+      const vacFlag = vac && vac.destination ? vac.destination : '';
+      const label = (weekIsCurrent ? 'this week' : weekLabel(monday)) + (rowHasVac ? ' ✈️' + vacFlag : '');
       const bandCell = rowHasVac ? '<div class="l4w-vac-band' + (vacUpcoming ? ' upcoming' : '') + '"></div>' : '';
       weeksHtml += '<div class="l4w-week-row' + (weekIsCurrent ? ' current' : '') + '">'
-        + planeCell
         + '<div class="l4w-week-label">' + label + '</div>'
         + daysHtml
         + '<div class="l4w-week-total">' + weekTotal + '</div>'
