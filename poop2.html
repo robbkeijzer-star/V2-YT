@@ -1817,10 +1817,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     ).join('');
     el.querySelectorAll('.bristol-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        megaBristol = btn.dataset.id;
-        el.querySelectorAll('.bristol-item').forEach((it) => it.classList.toggle('active', it.contains(btn)));
+        const wasActive = megaBristol === btn.dataset.id;
+        megaBristol = wasActive ? null : btn.dataset.id;
+        el.querySelectorAll('.bristol-item').forEach((it) => it.classList.toggle('active', !wasActive && it.contains(btn)));
         const t = BRISTOL_TYPES.find((x) => x.id === megaBristol);
-        document.getElementById('bristolDesc').textContent = t.label + ' — ' + t.desc;
+        document.getElementById('bristolDesc').textContent = t ? (t.label + ' — ' + t.desc) : 'Pick a type to see its description.';
       });
     });
   }
@@ -1831,8 +1832,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     ).join('');
     el.querySelectorAll('.color-swatch').forEach((btn) => {
       btn.addEventListener('click', () => {
-        megaColor = btn.dataset.id;
-        el.querySelectorAll('.color-item').forEach((it) => it.classList.toggle('active', it.contains(btn)));
+        const wasActive = megaColor === btn.dataset.id;
+        megaColor = wasActive ? null : btn.dataset.id;
+        el.querySelectorAll('.color-item').forEach((it) => it.classList.toggle('active', !wasActive && it.contains(btn)));
       });
     });
   }
@@ -1843,8 +1845,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     ).join('');
     el.querySelectorAll('.size-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        megaSize = btn.dataset.id;
-        el.querySelectorAll('.size-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        const wasActive = megaSize === btn.dataset.id;
+        megaSize = wasActive ? null : btn.dataset.id;
+        el.querySelectorAll('.size-btn').forEach((b) => b.classList.toggle('active', !wasActive && b === btn));
       });
     });
   }
@@ -1855,8 +1858,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     ).join('');
     el.querySelectorAll('.mood-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        megaMood = btn.dataset.id;
-        el.querySelectorAll('.mood-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        const wasActive = megaMood === btn.dataset.id;
+        megaMood = wasActive ? null : btn.dataset.id;
+        el.querySelectorAll('.mood-btn').forEach((b) => b.classList.toggle('active', !wasActive && b === btn));
       });
     });
   }
