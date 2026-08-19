@@ -1057,7 +1057,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
         const x = X(i), y = Y(mins);
         const labelUp = j % 2 === 0;
         const ly = labelUp ? y - 16 : y + 26;
-        parts.push('<text x="' + x.toFixed(1) + '" y="' + (y + 6).toFixed(1) + '" text-anchor="middle" font-size="18">💩</text>');
+        const dayVac = findVacationForDay(startOfDay(d));
+        const marker = (dayVac && dayVac.destination) ? dayVac.destination : '💩';
+        parts.push('<text x="' + x.toFixed(1) + '" y="' + (y + 6).toFixed(1) + '" text-anchor="middle" font-size="18">' + marker + '</text>');
         parts.push('<text class="time-label" x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle">' + fmtTime(d) + '</text>');
       });
     });
