@@ -1297,6 +1297,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.getElementById('yearOverviewTitle').textContent = y;
     document.getElementById('yearOverviewToggle').classList.toggle('active', yearOverviewExpanded);
     document.getElementById('yearNextBtn').disabled = y >= now.getFullYear();
+    document.getElementById('yearPrevBtn').disabled = y <= 2026;
 
     const months = yearOverviewExpanded
       ? Array.from({ length: 12 }, (_, m) => ({ y, m }))
@@ -1334,7 +1335,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     yearOverviewExpanded = !yearOverviewExpanded;
     renderYearOverview();
   });
-  document.getElementById('yearPrevBtn').addEventListener('click', () => { yearOverviewYear--; renderYearOverview(); });
+  document.getElementById('yearPrevBtn').addEventListener('click', () => {
+    if (yearOverviewYear <= 2026) return;
+    yearOverviewYear--; renderYearOverview();
+  });
   document.getElementById('yearNextBtn').addEventListener('click', () => {
     if (yearOverviewYear >= new Date().getFullYear()) return;
     yearOverviewYear++; renderYearOverview();
