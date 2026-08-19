@@ -345,14 +345,15 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 .entry-time { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .entry-stars { font-size: 11px; color: var(--poop); }
 .entry-extra { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.entry-edit, .entry-del {
+.entry-edit, .entry-dup, .entry-del {
   width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12);
   background: transparent; color: var(--text-tertiary); font-size: 13px; line-height: 1;
   cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
   display: flex; align-items: center; justify-content: center;
 }
 .entry-edit { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-weight: 700; font-size: 14px; }
-.entry-edit:active, .entry-del:active { background: rgba(255,255,255,0.08); }
+.entry-dup { font-size: 12px; }
+.entry-edit:active, .entry-dup:active, .entry-del:active { background: rgba(255,255,255,0.08); }
 
 /* ===== Modals ===== */
 .modal-bg {
@@ -923,6 +924,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     state.entries = state.entries.filter((e) => e.id !== id);
     save(state);
     renderAll();
+    if (currentDayDetailKey && document.getElementById('dayDetailBg').classList.contains('show')) {
+      openDayDetail(currentDayDetailKey);
+    }
   }
   function updateEntry(id, e) {
     const entry = state.entries.find((x) => x.id === id);
@@ -1279,7 +1283,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.getElementById('l4wCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
+  let currentDayDetailKey = null;
   function openDayDetail(dateKeyStr) {
+    currentDayDetailKey = dateKeyStr;
     const [yy, mm, dd] = dateKeyStr.split('-').map(Number);
     const dateObj = new Date(yy, mm - 1, dd);
     const dayEntries = state.entries
@@ -1456,10 +1462,25 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       + '<div class="entry-meta"><span class="entry-time">' + fmtDateShort(d) + ' · ' + fmtTime(d) + '</span>'
       + (stars ? '<span class="entry-stars">' + stars + '</span>' : '') + extraHtml + '</div>'
       + '<button class="entry-edit" data-id="' + e.id + '" type="button" aria-label="Edit">i</button>'
+      + '<button class="entry-dup" data-id="' + e.id + '" type="button" aria-label="Duplicate">⧉</button>'
       + '<button class="entry-del" data-id="' + e.id + '" type="button" aria-label="Delete">×</button></div>';
+  }
+  function duplicateEntry(id) {
+    const entry = state.entries.find((e) => e.id === id);
+    if (!entry) return;
+    addEntry({
+      ts: new Date(), photo: entry.photo, rating: entry.rating,
+      note: entry.note, profile: entry.profile, bristol: entry.bristol,
+      color: entry.color, size: entry.size, mood: entry.mood,
+      symptoms: (entry.symptoms || []).slice()
+    });
+    if (currentDayDetailKey && document.getElementById('dayDetailBg').classList.contains('show')) {
+      openDayDetail(currentDayDetailKey);
+    }
   }
   function bindEntryRowButtons(el) {
     el.querySelectorAll('.entry-edit').forEach((btn) => btn.addEventListener('click', () => openEditModal(btn.dataset.id)));
+    el.querySelectorAll('.entry-dup').forEach((btn) => btn.addEventListener('click', () => duplicateEntry(btn.dataset.id)));
     el.querySelectorAll('.entry-del').forEach((btn) => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
   }
   let recentExpanded = false;
@@ -1718,6 +1739,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   function openEditModal(id) {
     const entry = state.entries.find((e) => e.id === id);
     if (!entry) return;
+    document.getElementById('dayDetailBg').classList.remove('show');
     editingId = id;
     document.getElementById('megaModalTitle').textContent = 'Edit Entry';
     const d = new Date(entry.ts);
