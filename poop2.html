@@ -604,8 +604,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <label class="field-label">Photo</label>
       <input type="file" accept="image/*" capture="environment" id="manualPhotoInput" style="display:none">
       <input type="file" accept="image/*" id="manualPhotoInputGallery" style="display:none">
-      <div class="photo-picker" id="photoPickerBtn">
-        <span id="photoPreviewText">📷 Add Photo</span>
+      <div class="photo-picker" id="photoPickerBtn" style="display:none;">
         <img id="photoPreviewImg" style="display:none">
       </div>
       <div class="photo-btn-row">
@@ -672,8 +671,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       <label class="field-label">Photo</label>
       <input type="file" accept="image/*" capture="environment" id="megaPhotoInput" style="display:none">
       <input type="file" accept="image/*" id="megaPhotoInputGallery" style="display:none">
-      <div class="photo-picker" id="megaPhotoPickerBtn">
-        <span id="megaPhotoPreviewText">📷 Add Photo</span>
+      <div class="photo-picker" id="megaPhotoPickerBtn" style="display:none;">
         <img id="megaPhotoPreviewImg" style="display:none">
       </div>
       <div class="photo-btn-row">
@@ -1724,7 +1722,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     pendingPhoto = null;
     pendingRating = 0;
     document.getElementById('photoPreviewImg').style.display = 'none';
-    document.getElementById('photoPreviewText').style.display = 'block';
+    document.getElementById('photoPickerBtn').style.display = 'none';
     updateStars();
   }
   function openManualModal() {
@@ -1765,8 +1763,8 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.querySelectorAll('#symptomRow .symptom-chip').forEach((b) => b.classList.toggle('active', megaSymptoms.includes(b.dataset.id)));
 
     const img = document.getElementById('megaPhotoPreviewImg');
-    if (megaPhoto) { img.src = megaPhoto; img.style.display = 'block'; document.getElementById('megaPhotoPreviewText').style.display = 'none'; }
-    else { img.style.display = 'none'; document.getElementById('megaPhotoPreviewText').style.display = 'block'; }
+    if (megaPhoto) { img.src = megaPhoto; img.style.display = 'block'; document.getElementById('megaPhotoPickerBtn').style.display = 'flex'; }
+    else { img.style.display = 'none'; document.getElementById('megaPhotoPickerBtn').style.display = 'none'; }
 
     updateMegaStars();
     document.getElementById('megaBg').classList.add('show');
@@ -1787,14 +1785,18 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       pendingPhoto = dataUrl;
       const img = document.getElementById('photoPreviewImg');
       img.src = dataUrl; img.style.display = 'block';
-      document.getElementById('photoPreviewText').style.display = 'none';
+      document.getElementById('photoPickerBtn').style.display = 'flex';
     });
   }
   document.getElementById('manualPhotoInput').addEventListener('change', handleManualPhotoFile);
   document.getElementById('manualPhotoInputGallery').addEventListener('change', handleManualPhotoFile);
 
   document.querySelectorAll('#ratingRow .star-btn').forEach((b) => {
-    b.addEventListener('click', () => { pendingRating = Number(b.dataset.r); updateStars(); });
+    b.addEventListener('click', () => {
+      const r = Number(b.dataset.r);
+      pendingRating = pendingRating === r ? 0 : r;
+      updateStars();
+    });
   });
 
   document.getElementById('manualSave').addEventListener('click', () => {
@@ -1897,7 +1899,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     document.querySelectorAll('#bristolGrid .bristol-item, #colorRow .color-item, #sizeRow .size-btn, #moodRow .mood-btn, #symptomRow .symptom-chip')
       .forEach((b) => b.classList.remove('active'));
     document.getElementById('megaPhotoPreviewImg').style.display = 'none';
-    document.getElementById('megaPhotoPreviewText').style.display = 'block';
+    document.getElementById('megaPhotoPickerBtn').style.display = 'none';
     updateMegaStars();
   }
   function openMegaModal(dateKeyStr) {
@@ -1924,14 +1926,18 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       megaPhoto = dataUrl;
       const img = document.getElementById('megaPhotoPreviewImg');
       img.src = dataUrl; img.style.display = 'block';
-      document.getElementById('megaPhotoPreviewText').style.display = 'none';
+      document.getElementById('megaPhotoPickerBtn').style.display = 'flex';
     });
   }
   document.getElementById('megaPhotoInput').addEventListener('change', handleMegaPhotoFile);
   document.getElementById('megaPhotoInputGallery').addEventListener('change', handleMegaPhotoFile);
 
   document.querySelectorAll('#megaRatingRow .star-btn').forEach((b) => {
-    b.addEventListener('click', () => { megaRating = Number(b.dataset.r); updateMegaStars(); });
+    b.addEventListener('click', () => {
+      const r = Number(b.dataset.r);
+      megaRating = megaRating === r ? 0 : r;
+      updateMegaStars();
+    });
   });
 
   document.getElementById('megaSave').addEventListener('click', () => {
