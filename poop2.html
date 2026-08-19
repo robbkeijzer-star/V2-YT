@@ -1302,14 +1302,22 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       ? Array.from({ length: 12 }, (_, m) => ({ y, m }))
       : getLast4MonthsOfYear(y);
 
+    const vac = getVacation();
+    const vacRange = vacationRange();
+
     let html = '';
     months.forEach(({ y: my, m }) => {
       const { dayCounts, total } = getMonthEntryData(my, m);
       const dim = daysInMonth(my, m);
       const firstDow = new Date(my, m, 1).getDay();
       const leadingBlanks = (firstDow + 6) % 7;
+      let vacFlag = '';
+      if (vac && vac.destination && vacRange) {
+        const monthStart = new Date(my, m, 1), monthEnd = new Date(my, m, dim);
+        if (!(vacRange.end < monthStart || vacRange.start > monthEnd)) vacFlag = ' ' + vac.destination;
+      }
       html += '<div class="year-ov-month">';
-      html += '<div class="year-ov-month-title">' + MONTH_NAMES_SHORT[m] + (total ? ' (' + total + ')' : '') + '</div>';
+      html += '<div class="year-ov-month-title">' + MONTH_NAMES_SHORT[m] + (total ? ' (' + total + ')' : '') + vacFlag + '</div>';
       html += '<div class="year-ov-days">';
       for (let i = 0; i < leadingBlanks; i++) html += '<div class="year-ov-day empty"></div>';
       for (let day = 1; day <= dim; day++) {
