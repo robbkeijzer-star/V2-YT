@@ -1989,9 +1989,23 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   document.getElementById('menuOverlay').addEventListener('click', (e) => { if (e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('show'); });
 
   window.addEventListener('resize', () => { renderChart(); renderYearly(); });
+  window.addEventListener('storage', () => { state = load(); renderAll(); });
   renderAll();
   startFactTicker();
 })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof initCloudSync !== 'function') return;
+  initCloudSync({
+    appKey: 'poop2',
+    syncedKeys: ['poop2_v1'],
+    onApplied: function () {
+      window.dispatchEvent(new Event('storage'));
+    }
+  });
+});
 </script>
 </body>
 </html>
