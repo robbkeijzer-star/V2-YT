@@ -326,8 +326,17 @@ html body.has-bottombar { padding-bottom: 60px !important; }
 .yearly-wrap svg { width: 100%; height: 160px; display: block; }
 
 /* ===== Gallery ===== */
+.gallery-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.gallery-head .card-title { margin-bottom: 0; }
+.gallery-eye-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03); color: var(--text-secondary); font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+}
+.gallery-eye-btn.active { border-color: var(--poop); background: rgba(192,133,82,0.18); color: var(--text-primary); }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
-.gallery-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
+.gallery-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; filter: blur(12px); transition: filter 0.2s ease; }
+.gallery-grid.revealed .gallery-thumb { filter: none; }
 .gallery-empty { grid-column: 1/-1; font-size: 13px; color: var(--text-tertiary); }
 
 /* ===== Recent list ===== */
@@ -573,7 +582,10 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   </div>
 
   <div class="gm-card">
-    <div class="card-title">Photo Gallery</div>
+    <div class="gallery-head">
+      <div class="card-title">Photo Gallery</div>
+      <button class="gallery-eye-btn" id="galleryEyeBtn" type="button" aria-label="Toggle photo blur">👁️</button>
+    </div>
     <div class="gallery-grid" id="galleryGrid"></div>
   </div>
 
@@ -1435,6 +1447,11 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
       img.addEventListener('click', () => openPhotoView(img.dataset.id));
     });
   }
+
+  document.getElementById('galleryEyeBtn').addEventListener('click', () => {
+    const revealed = document.getElementById('galleryGrid').classList.toggle('revealed');
+    document.getElementById('galleryEyeBtn').classList.toggle('active', revealed);
+  });
 
   function openPhotoView(id) {
     const e = state.entries.find((x) => x.id === id);
