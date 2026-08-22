@@ -277,26 +277,27 @@ body::after {
 /* ===== Log list ===== */
 .log-list { list-style: none; margin: 0; padding: 0; }
 .empty-state { text-align: center; font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 16px 0; }
-.log-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin-bottom: 8px;
-  background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
-.log-row-top { display: flex; align-items: flex-start; gap: 12px; }
-.log-emoji { font-size: 20px; flex-shrink: 0; }
-.log-main { flex: 1; min-width: 0; }
-.log-name { font-size: 14px; color: var(--text-primary); font-weight: 600; }
-.log-name b { font-family: var(--font-mono); color: #E7C690; font-weight: 700; margin-left: 6px; }
-.log-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.5; }
-.log-meta .sep { opacity: 0.4; margin: 0 5px; }
-.log-row-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 32px; }
-.log-time { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.log-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.log-edit { border: 1px solid rgba(255,255,255,0.18); background: transparent; color: var(--text-tertiary); font-size: 11px; font-weight: 700;
-  font-style: italic; font-family: Georgia, 'Times New Roman', serif; cursor: pointer; width: 18px; height: 18px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; opacity: 0.6; transition: opacity 0.2s, color 0.2s, border-color 0.2s; flex-shrink: 0; padding: 0; }
-.log-edit:hover { opacity: 1; color: #7DD3FC; border-color: #7DD3FC; }
-.log-dup { border: 0; background: transparent; color: var(--text-tertiary); font-size: 15px; cursor: pointer; padding: 0 2px; opacity: 0.5; transition: opacity 0.2s, color 0.2s; }
-.log-dup:hover { opacity: 1; color: #7DD3FC; }
-.log-del { border: 0; background: transparent; color: var(--text-tertiary); font-size: 18px; cursor: pointer; padding: 0 2px; opacity: 0.5; transition: opacity 0.2s, color 0.2s; }
-.log-del:hover { opacity: 1; color: var(--danger); }
+.log-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px;
+  border-radius: 11px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.log-emoji { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.log-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.log-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-name b { font-family: var(--font-mono); color: #E7C690; font-weight: 700; margin-left: 5px; }
+.log-time { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-tertiary); }
+.log-edit, .log-dup, .log-del {
+  width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.12);
+  background: transparent; color: var(--text-tertiary); font-size: 11px; line-height: 1;
+  cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.log-edit { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 700; font-size: 12px; }
+.log-dup { font-size: 12px; }
+.log-del { font-size: 15px; }
+.log-edit:hover, .log-dup:hover { color: #7DD3FC; border-color: #7DD3FC; }
+.log-del:hover { color: var(--danger); }
+.log-edit:active, .log-dup:active, .log-del:active { background: rgba(255,255,255,0.08); }
 
 /* ===== Edit modal ===== */
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -547,7 +548,7 @@ body::after {
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 
   /* ============ Pharmacokinetics ============ */
-  const HALF_LIFE_H = 5, PEAK_MIN = 45, FDA_MAX = 400;
+  const HALF_LIFE_H = 5, FDA_MAX = 400;
 
   /* ============ Beverage database ============ */
   const DB = [
@@ -652,11 +653,6 @@ body::after {
   /* ============ Pharmacokinetics ============ */
   function activeAt(dose, ts, t) { const hrs=(t-ts)/3600000; return hrs<0?0:dose*Math.pow(0.5,hrs/HALF_LIFE_H); }
   function totalActiveAt(t) { let s=0; for(const l of logs) s+=activeAt(l.mg,l.ts,t); return s; }
-  function milestones(l) {
-    const peak=l.ts+PEAK_MIN*60000, half=l.ts+HALF_LIFE_H*3600000;
-    const clearedH = l.mg>10 ? HALF_LIFE_H*Math.log2(l.mg/10) : 0.5;
-    return { peak, half, cleared: l.ts+clearedH*3600000 };
-  }
 
 
   /* ============ WHOOP (optional) ============ */
@@ -956,13 +952,12 @@ body::after {
     const list=$('logList'); const tl=todaysLogs().slice().sort((a,b)=>b.ts-a.ts); list.innerHTML='';
     if(tl.length===0){ const li=document.createElement('li'); li.className='empty-state'; li.textContent='No drinks logged today — search one above to start tracking.'; list.appendChild(li); return; }
     tl.forEach(l=>{
-      const m=milestones(l); const li=document.createElement('li'); li.className='log-row';
-      li.innerHTML='<div class="log-row-top"><span class="log-emoji">'+(l.e||'☕')+'</span><div class="log-main"><div class="log-name">'+escapeHtml(l.n)+'<b>'+l.mg+' mg</b></div>'
-        +'<div class="log-meta">Peaks '+fmtTime(m.peak)+'<span class="sep">•</span>Half gone '+fmtTime(m.half)+'<span class="sep">•</span>Cleared '+fmtTime(m.cleared)+'</div></div></div>'
-        +'<div class="log-row-actions"><span class="log-time">'+fmtTime(l.ts)+'</span>'
-        +'<div class="log-btns"><button class="log-edit" type="button" aria-label="Edit">i</button>'
-        +'<button class="log-dup" type="button" aria-label="Duplicate">📋</button>'
-        +'<button class="log-del" type="button" aria-label="Delete">×</button></div></div>';
+      const li=document.createElement('li'); li.className='log-row';
+      li.innerHTML='<div class="log-emoji">'+(l.e||'☕')+'</div>'
+        +'<div class="log-main"><span class="log-name">'+escapeHtml(l.n)+'<b>'+l.mg+' mg</b></span><span class="log-time">'+fmtTime(l.ts)+'</span></div>'
+        +'<button class="log-edit" type="button" aria-label="Edit">i</button>'
+        +'<button class="log-dup" type="button" aria-label="Duplicate">⧉</button>'
+        +'<button class="log-del" type="button" aria-label="Delete">×</button>';
       li.querySelector('.log-edit').addEventListener('click',()=>openEdit(l));
       li.querySelector('.log-dup').addEventListener('click',()=>duplicateLog(l));
       li.querySelector('.log-del').addEventListener('click',()=>{ logs=logs.filter(x=>x.id!==l.id); saveJSON(LOGS_KEY,logs); renderAll(); });
