@@ -1239,8 +1239,9 @@ body::after {
     for(const item of remote) map.set(keyOf(item), item);
     return Array.from(map.values());
   }
-  if(window.initCloudSync){
-    window.initCloudSync({
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
       appKey:'caffeine',
       syncedKeys:[LOGS_KEY,CUSTOM_KEY,SLEEP_KEY],
       merge:function(key, localVal, remoteVal){
@@ -1253,7 +1254,7 @@ body::after {
         populateSleepInputs(); renderResults($('search').value); renderAll();
       }
     });
-  }
+  });
 })();
 </script>
 </body>
