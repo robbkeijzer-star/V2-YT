@@ -275,15 +275,18 @@ body::after {
 /* ===== Log list ===== */
 .log-list { list-style: none; margin: 0; padding: 0; }
 .empty-state { text-align: center; font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 16px 0; }
-.log-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 8px;
+.log-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; margin-bottom: 8px;
   background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; }
+.log-row-top { display: flex; align-items: flex-start; gap: 12px; }
 .log-emoji { font-size: 20px; flex-shrink: 0; }
 .log-main { flex: 1; min-width: 0; }
 .log-name { font-size: 14px; color: var(--text-primary); font-weight: 600; }
 .log-name b { font-family: var(--font-mono); color: #E7C690; font-weight: 700; margin-left: 6px; }
 .log-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.5; }
 .log-meta .sep { opacity: 0.4; margin: 0 5px; }
+.log-row-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 32px; }
 .log-time { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.log-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .log-edit { border: 1px solid rgba(255,255,255,0.18); background: transparent; color: var(--text-tertiary); font-size: 11px; font-weight: 700;
   font-style: italic; font-family: Georgia, 'Times New Roman', serif; cursor: pointer; width: 18px; height: 18px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center; opacity: 0.6; transition: opacity 0.2s, color 0.2s, border-color 0.2s; flex-shrink: 0; padding: 0; }
@@ -933,12 +936,12 @@ body::after {
     if(tl.length===0){ const li=document.createElement('li'); li.className='empty-state'; li.textContent='No drinks logged today — search one above to start tracking.'; list.appendChild(li); return; }
     tl.forEach(l=>{
       const m=milestones(l); const li=document.createElement('li'); li.className='log-row';
-      li.innerHTML='<span class="log-emoji">'+(l.e||'☕')+'</span><div class="log-main"><div class="log-name">'+escapeHtml(l.n)+'<b>'+l.mg+' mg</b></div>'
-        +'<div class="log-meta">Peaks '+fmtTime(m.peak)+'<span class="sep">•</span>Half gone '+fmtTime(m.half)+'<span class="sep">•</span>Cleared '+fmtTime(m.cleared)+'</div></div>'
-        +'<span class="log-time">'+fmtTime(l.ts)+'</span>'
-        +'<button class="log-edit" type="button" aria-label="Edit">i</button>'
+      li.innerHTML='<div class="log-row-top"><span class="log-emoji">'+(l.e||'☕')+'</span><div class="log-main"><div class="log-name">'+escapeHtml(l.n)+'<b>'+l.mg+' mg</b></div>'
+        +'<div class="log-meta">Peaks '+fmtTime(m.peak)+'<span class="sep">•</span>Half gone '+fmtTime(m.half)+'<span class="sep">•</span>Cleared '+fmtTime(m.cleared)+'</div></div></div>'
+        +'<div class="log-row-actions"><span class="log-time">'+fmtTime(l.ts)+'</span>'
+        +'<div class="log-btns"><button class="log-edit" type="button" aria-label="Edit">i</button>'
         +'<button class="log-dup" type="button" aria-label="Duplicate">📋</button>'
-        +'<button class="log-del" type="button" aria-label="Delete">×</button>';
+        +'<button class="log-del" type="button" aria-label="Delete">×</button></div></div>';
       li.querySelector('.log-edit').addEventListener('click',()=>openEdit(l));
       li.querySelector('.log-dup').addEventListener('click',()=>duplicateLog(l));
       li.querySelector('.log-del').addEventListener('click',()=>{ logs=logs.filter(x=>x.id!==l.id); saveJSON(LOGS_KEY,logs); renderAll(); });
