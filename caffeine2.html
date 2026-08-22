@@ -202,7 +202,7 @@ body::after {
 
 /* footer summary band */
 .plan-band { margin-top: 16px; padding: 14px 16px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px;
-  display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; }
 .plan-item { display: flex; flex-direction: column; gap: 2px; }
 .plan-item .k { font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); }
 .plan-item .v { font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
@@ -243,7 +243,7 @@ body::after {
 }
 .gm-input::placeholder { color: var(--text-tertiary); }
 .gm-input:focus { border-color: rgba(201,163,107,0.45); background: rgba(0,0,0,0.36); }
-.results { list-style: none; margin: 12px 0 0; padding: 0; max-height: 168px; overflow-y: auto; }
+.results { list-style: none; margin: 12px 0 0; padding: 0; max-height: 220px; overflow-y: auto; }
 .result { display: flex; align-items: center; gap: 12px; padding: 11px 12px; margin-bottom: 6px;
   background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .result:hover { background: rgba(201,163,107,0.10); border-color: rgba(201,163,107,0.30); }
@@ -552,6 +552,8 @@ body::after {
 
   /* ============ Beverage database ============ */
   const DB = [
+    {n:'Red Bull (12 oz)',mg:114,c:'Energy',e:'⚡'},{n:'Monster Ultra (16 oz)',mg:150,c:'Energy',e:'⚡'},
+    {n:'Monster White (16 oz)',mg:160,c:'Energy',e:'⚡'},
     {n:'Brewed coffee (8 oz)',mg:95,c:'Coffee',e:'☕'},{n:'Brewed coffee (12 oz)',mg:140,c:'Coffee',e:'☕'},
     {n:'Brewed coffee (16 oz)',mg:190,c:'Coffee',e:'☕'},{n:'Cold brew (16 oz)',mg:205,c:'Coffee',e:'🧊'},
     {n:'Decaf coffee (8 oz)',mg:3,c:'Coffee',e:'☕'},{n:'Dunkin medium coffee',mg:210,c:'Coffee',e:'☕'},
@@ -559,14 +561,12 @@ body::after {
     {n:'Cappuccino (1 shot)',mg:64,c:'Espresso',e:'☕'},{n:'Macchiato (1 shot)',mg:64,c:'Espresso',e:'☕'},
     {n:'Double espresso (2 shots)',mg:128,c:'Espresso',e:'☕'},{n:'Latte, large (2 shots)',mg:128,c:'Espresso',e:'☕'},
     {n:'Americano (2 shots)',mg:128,c:'Espresso',e:'☕'},{n:'Mocha (2 shots)',mg:128,c:'Espresso',e:'☕'},
-    {n:'Flat white (2 shots)',mg:130,c:'Espresso',e:'☕'},
+    {n:'Flat white (2 shots)',mg:130,c:'Espresso',e:'☕'},{n:'Tripleshot Starbucks',mg:141,c:'Espresso',e:'☕'},
     {n:'Black tea (8 oz)',mg:47,c:'Tea',e:'🍵'},{n:'Green tea (8 oz)',mg:28,c:'Tea',e:'🍵'},
     {n:'Matcha (1 tsp)',mg:110,c:'Tea',e:'🍵'},{n:'Oolong tea (8 oz)',mg:38,c:'Tea',e:'🍵'},
     {n:'White tea (8 oz)',mg:30,c:'Tea',e:'🍵'},{n:'Chai latte (8 oz)',mg:50,c:'Tea',e:'🍵'},
     {n:'Yerba mate (8 oz)',mg:85,c:'Tea',e:'🍵'},{n:'Iced tea (16 oz)',mg:47,c:'Tea',e:'🧊'},
     {n:'Herbal / rooibos tea',mg:0,c:'Tea',e:'🍵'},
-    {n:'Red Bull (12 oz)',mg:114,c:'Energy',e:'⚡'},{n:'Monster Ultra (16 oz)',mg:160,c:'Energy',e:'⚡'},
-    {n:'Monster White (16 oz)',mg:160,c:'Energy',e:'⚡'},
   ];
 
   /* ============ Storage ============ */
@@ -1102,7 +1102,7 @@ body::after {
       items=items.filter(d=>d.n.toLowerCase().includes(query)||d.c.toLowerCase().includes(query));
       items=items.slice(0,40);
     } else {
-      const recentKeys=recentDrinkKeys(3);
+      const recentKeys=recentDrinkKeys(4);
       const recentSet=new Set(recentKeys);
       const byKey=new Map(items.map(d=>[d.n+'|'+d.mg, d]));
       const recent=recentKeys.map(k=>byKey.get(k)).filter(Boolean);
