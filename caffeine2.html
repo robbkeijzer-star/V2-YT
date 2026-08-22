@@ -885,23 +885,33 @@ body::after {
     svg.innerHTML=parts.join('');
   }
 
+  function dayLabelForHour(h){
+    const target=new Date(hToTs(h)); target.setHours(0,0,0,0);
+    const today0=new Date(); today0.setHours(0,0,0,0);
+    const diffDays=Math.round((target-today0)/86400000);
+    if(diffDays<=0) return '';
+    if(diffDays===1) return ' tomorrow';
+    return ' in '+diffDays+' days';
+  }
+  function fmtClockDay(h){ return fmtClock(h)+dayLabelForHour(h); }
+
   function renderPlan(){
     const a=analysis();
     const now=nowHour();
     const peakMg=Math.round(a.peakV);
     // band
-    $('peakVal').textContent = a.hasCaffeine ? (peakMg+' mg @ '+fmtClock(a.peakT)) : '—';
-    $('crashVal').textContent = a.halfT!=null ? fmtClock(a.halfT) : (a.hasActiveNow ? '—' : 'already clear');
-    $('cutoffVal').textContent = fmtClock(a.cutoff);
-    $('clearedVal').textContent = a.clearedT!=null ? fmtClock(a.clearedT) : (a.hasActiveNow ? '—' : 'already clear');
+    $('peakVal').textContent = a.hasCaffeine ? (peakMg+' mg @ '+fmtClockDay(a.peakT)) : '—';
+    $('crashVal').textContent = a.halfT!=null ? fmtClockDay(a.halfT) : (a.hasActiveNow ? '—' : 'already clear');
+    $('cutoffVal').textContent = fmtClockDay(a.cutoff);
+    $('clearedVal').textContent = a.clearedT!=null ? fmtClockDay(a.clearedT) : (a.hasActiveNow ? '—' : 'already clear');
     // tiles
-    $('mPeak').textContent = a.hasCaffeine ? fmtClock(a.peakT) : '—';
+    $('mPeak').textContent = a.hasCaffeine ? fmtClockDay(a.peakT) : '—';
     $('mPeakSub').textContent = a.hasCaffeine ? (peakMg+' mg — your highest level today.') : 'Log a drink to see your peak.';
-    $('mCrash').textContent = a.halfT!=null ? fmtClock(a.halfT) : (a.hasActiveNow ? '—' : 'Already clear');
+    $('mCrash').textContent = a.halfT!=null ? fmtClockDay(a.halfT) : (a.hasActiveNow ? '—' : 'Already clear');
     $('mCrashSub').textContent = a.halfT!=null ? ('Drops to ~'+Math.round(a.nowMg/2)+' mg by then.') : 'No caffeine active right now.';
-    $('mCutoff').textContent = fmtClock(a.cutoff);
+    $('mCutoff').textContent = fmtClockDay(a.cutoff);
     $('mCutoffSub').textContent = 'Last coffee to keep <30 mg by your '+fmtClock(bedHour)+' bedtime.';
-    $('mCleared').textContent = a.clearedT!=null ? fmtClock(a.clearedT) : (a.hasActiveNow ? '—' : 'Already clear');
+    $('mCleared').textContent = a.clearedT!=null ? fmtClockDay(a.clearedT) : (a.hasActiveNow ? '—' : 'Already clear');
     $('mClearedSub').textContent = a.clearedT!=null ? 'When you\'ll be fully caffeine-free (<10 mg).' : 'No caffeine active right now.';
 
     const bedTs=hToTs(bedHour < now ? bedHour+24 : bedHour);
@@ -913,7 +923,7 @@ body::after {
     if(a.cutoff < now) tips.push(['🌙','It\'s past your coffee cutoff ('+fmtClock(a.cutoff)+'). More caffeine now will likely cost you sleep tonight.']);
     else tips.push(['🌙','You can still have coffee until ~'+fmtClock(a.cutoff)+' without wrecking your '+fmtClock(bedHour)+' bedtime.']);
     if(atBed>=50) tips.push(['⚠️','~'+atBed+' mg will still be active at bedtime — that\'s enough to delay deep sleep. Ease off.']);
-    if(a.halfT!=null) tips.push(['🚶','Your caffeine drops to half by '+fmtClock(a.halfT)+' — a common time to feel it fade. Beat it with daylight + water instead of another coffee.']);
+    if(a.halfT!=null) tips.push(['🚶','Your caffeine drops to half by '+fmtClockDay(a.halfT)+' — a common time to feel it fade. Beat it with daylight + water instead of another coffee.']);
     tips.push(['💧','Drink a glass of water per caffeinated drink — dehydration mimics and worsens the crash.']);
     if(recovery!=null && recovery<34) tips.push(['🔋','WHOOP recovery is '+recovery+'% — low. Caffeine masks fatigue but won\'t repay sleep debt; keep today under '+dailyLimit()+' mg.']);
     const ul=$('tips'); ul.innerHTML='';
