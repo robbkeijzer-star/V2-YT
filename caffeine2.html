@@ -170,7 +170,9 @@ body::after {
 .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring-track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 7; }
 .ring-fill { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(0.22,1,0.36,1), stroke 0.4s; }
-.ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); letter-spacing: -0.03em; }
+.ring-num-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-num { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); letter-spacing: -0.03em; line-height: 1; }
+.ring-unit { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 2px; }
 .energy-label { display: flex; flex-direction: column; }
 .energy-state { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
 .energy-when { font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-tertiary); margin: 3px 0 5px; }
@@ -363,14 +365,17 @@ body::after {
             <circle class="ring-track" cx="46" cy="46" r="40"></circle>
             <circle class="ring-fill" id="ringFill" cx="46" cy="46" r="40"></circle>
           </svg>
-          <div class="ring-num" id="ringNum">—</div>
+          <div class="ring-num-wrap">
+            <div class="ring-num" id="ringNum">—</div>
+            <div class="ring-unit">MG</div>
+          </div>
         </div>
         <div class="energy-label">
-          <span class="energy-state" id="energyState">Energy</span>
+          <span class="energy-state" id="energyState">—</span>
           <span class="energy-when" id="energyWhen">Right now</span>
           <span class="energy-hint"><span class="dot"></span>Hover / drag the curve</span>
         </div>
-        <div class="energy-desc">Your predicted energy, hour by hour — built from your caffeine, your body clock, and how long you've been awake.</div>
+        <div class="energy-desc">Your caffeine level, hour by hour — rises with every drink and fades on its own half-life.</div>
         <div class="seg-toggle-wrap">
           <div class="seg-toggle" id="modeToggle">
             <button data-m="line" class="on">LINE</button>
@@ -764,17 +769,30 @@ body::after {
   function todaysLogs(){ const s=startOfToday(); return logs.filter(l=>l.ts>=s); }
   function dailyTotal(){ return Math.round(todaysLogs().reduce((a,l)=>a+l.mg,0)); }
 
+  /* ---- Caffeine-level curve (intake + decay), used by the ring + hero chart ---- */
+  function caffeineAt(t){ return totalActiveAt(hToTs(t)); }
+  function sampleCaffeine(){ const pts=[]; for(let i=0;i<=144;i++){ const t=i/6; pts.push([t, caffeineAt(t)]); } return pts; }
+  function caffeineYMax(pts){
+    const maxVal = pts.reduce((m,p)=>Math.max(m,p[1]), 0);
+    return Math.max(100, Math.ceil((maxVal*1.15)/50)*50);
+  }
+  function caffeineStateWord(mg){ if(mg<=1) return 'None'; if(mg<100) return 'Low'; if(mg<200) return 'Moderate'; return 'High'; }
+  function caffeineColor(mg){ if(mg<=1) return 'rgba(255,255,255,0.35)'; if(mg<100) return '#6BE3A4'; if(mg<200) return '#F2C063'; return '#FF8A8A'; }
+  function contributingDoses(pts){ return logs.filter(l => pts.some(([t]) => activeAt(l.mg, l.ts, hToTs(t)) > 1)); }
+
   function renderRing(){
     const t = scrubT!=null ? scrubT : nowHour();
-    const v = Math.round(energyAt(t, true));
+    const mg = Math.round(caffeineAt(t));
+    const RING_MAX = 300;
+    const pct = Math.min(1, mg/RING_MAX);
     const C = 2*Math.PI*40;
     const fill = $('ringFill');
     fill.style.strokeDasharray = C;
-    fill.style.strokeDashoffset = C*(1 - v/100);
-    fill.style.stroke = energyColor(v);
-    $('ringNum').textContent = v;
-    $('energyState').textContent = stateWord(v);
-    $('energyState').style.color = energyColor(v);
+    fill.style.strokeDashoffset = C*(1 - pct);
+    fill.style.stroke = caffeineColor(mg);
+    $('ringNum').textContent = mg;
+    $('energyState').textContent = caffeineStateWord(mg);
+    $('energyState').style.color = caffeineColor(mg);
     $('energyWhen').textContent = scrubT!=null ? ('at ' + fmtClock(t)) : 'Right now';
   }
 
@@ -798,43 +816,49 @@ body::after {
   function renderChart(){
     const svg=$('energyChart'); const W=600,H=230,padT=14,padB=8;
     const now=nowHour();
+    const pts=sampleCaffeine();
+    const yMax=caffeineYMax(pts);
     const X=(t)=> (t/24)*W;
-    const Y=(v)=> H-padB-(v/100)*(H-padB-padT);
-    const pts=sample(true);
+    const Y=(v)=> H-padB-(v/yMax)*(H-padB-padT);
     const sw = shadeSleep ? sleepWindow() : null;
     let parts=[];
     // night shading (asleep regions)
     const nightFill='rgba(255,255,255,0.025)';
     parts.push('<rect x="0" y="0" width="'+X(wakeHour)+'" height="'+H+'" fill="'+nightFill+'"/>');
     parts.push('<rect x="'+X(bedHour)+'" y="0" width="'+(W-X(bedHour))+'" height="'+H+'" fill="'+nightFill+'"/>');
-    // gridlines
-    for(let g=25;g<=100;g+=25){ const y=Y(g).toFixed(1); parts.push('<line x1="0" y1="'+y+'" x2="'+W+'" y2="'+y+'" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>'); }
+    // gridlines (dynamic, quarter steps of the mg scale)
+    const gStep=yMax/4;
+    for(let g=gStep; g<=yMax+0.001; g+=gStep){
+      const y=Y(g).toFixed(1);
+      parts.push('<line x1="0" y1="'+y+'" x2="'+W+'" y2="'+y+'" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>');
+      parts.push('<text x="4" y="'+(Number(y)-4).toFixed(1)+'" font-family="ui-monospace,monospace" font-size="9" fill="rgba(255,255,255,0.28)">'+Math.round(g)+'</text>');
+    }
 
-    parts.push('<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(107,227,164,0.42)"/><stop offset="100%" stop-color="rgba(107,227,164,0)"/></linearGradient>'
-      + '<linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(201,163,107,0.45)"/><stop offset="100%" stop-color="rgba(201,163,107,0.05)"/></linearGradient></defs>');
+    parts.push('<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(107,227,164,0.42)"/><stop offset="100%" stop-color="rgba(107,227,164,0)"/></linearGradient></defs>');
 
     if(chartMode==='bars'){
       for(let hh=0;hh<24;hh++){
-        const v=energyAt(hh+0.5,true); const x=X(hh+0.12), w=X(0.76); const y=Y(v), h=H-padB-y;
+        const v=caffeineAt(hh+0.5); const x=X(hh+0.12), w=X(0.76); const y=Y(v), h=H-padB-y;
         const asleep = sw && inSleepWindow(hh+0.5, sw.bed, sw.wake);
-        const color = asleep ? '#6E6E73' : energyColor(v);
+        const color = asleep ? '#6E6E73' : caffeineColor(v);
         parts.push('<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="2" fill="'+color+'" opacity="0.85"/>');
       }
     } else if(chartMode==='stack'){
-      // baseline (no caffeine) area + caffeine contribution on top
-      const base=sample(false);
-      let bl='M '+X(base[0][0]).toFixed(1)+' '+Y(base[0][1]).toFixed(1);
-      base.forEach((p,i)=>{ if(i) bl+=' L '+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1); });
-      let baseArea=bl+' L '+W+' '+(H-padB)+' L 0 '+(H-padB)+' Z';
-      parts.push('<path d="'+baseArea+'" fill="rgba(255,255,255,0.06)"/>');
-      parts.push('<path d="'+bl+'" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-dasharray="4 3"/>');
-      // caffeine band between base and total
-      let top='M '+X(pts[0][0]).toFixed(1)+' '+Y(pts[0][1]).toFixed(1);
-      pts.forEach((p,i)=>{ if(i) top+=' L '+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1); });
-      let band=top;
-      for(let i=base.length-1;i>=0;i--){ band+=' L '+X(base[i][0]).toFixed(1)+' '+Y(base[i][1]).toFixed(1); }
-      band+=' Z';
-      parts.push('<path d="'+band+'" fill="url(#cg)"/>');
+      // per-drink stacked decay bands — shows which dose is contributing what, and when each wears off
+      const palette=['#6BE3A4','#7DD3FC','#F2C063','#C9A3FF','#FF8A8A','#E7C690'];
+      const doses=contributingDoses(pts);
+      let cum=pts.map(()=>0);
+      doses.forEach((dose,i)=>{
+        const series=pts.map(([t])=>activeAt(dose.mg, dose.ts, hToTs(t)));
+        const lower=cum;
+        const upper=cum.map((c,idx)=>c+series[idx]);
+        let d='M '+X(pts[0][0]).toFixed(1)+' '+Y(upper[0]).toFixed(1);
+        pts.forEach((p,idx)=>{ if(idx) d+=' L '+X(p[0]).toFixed(1)+' '+Y(upper[idx]).toFixed(1); });
+        for(let idx=pts.length-1; idx>=0; idx--){ d+=' L '+X(pts[idx][0]).toFixed(1)+' '+Y(lower[idx]).toFixed(1); }
+        d+=' Z';
+        parts.push('<path d="'+d+'" fill="'+palette[i%palette.length]+'" opacity="0.5"/>');
+        cum=upper;
+      });
       if(sw){
         splitBySleep(pts, sw.bed, sw.wake).forEach(seg=>{
           const d=pathFromPts(seg.pts,X,Y);
@@ -842,12 +866,11 @@ body::after {
           parts.push('<path d="'+d+'" fill="none" stroke="'+stroke+'" stroke-width="2.5" stroke-linejoin="round"/>');
         });
       } else {
-        parts.push('<path d="'+top+'" fill="none" stroke="#6BE3A4" stroke-width="2.5" stroke-linejoin="round"/>');
+        parts.push('<path d="'+pathFromPts(pts,X,Y)+'" fill="none" stroke="#6BE3A4" stroke-width="2.5" stroke-linejoin="round"/>');
       }
     } else {
       // LINE (default) — smooth glowing curve + area
-      let line='M '+X(pts[0][0]).toFixed(1)+' '+Y(pts[0][1]).toFixed(1);
-      pts.forEach((p,i)=>{ if(i) line+=' L '+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1); });
+      const line=pathFromPts(pts,X,Y);
       const area=line+' L '+W+' '+(H-padB)+' L 0 '+(H-padB)+' Z';
       parts.push('<path d="'+area+'" fill="url(#eg)"/>');
       if(sw){
@@ -873,9 +896,9 @@ body::after {
     // markers: now + scrub
     const xNow=X(now).toFixed(1);
     parts.push('<line x1="'+xNow+'" y1="0" x2="'+xNow+'" y2="'+H+'" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>');
-    parts.push('<circle cx="'+xNow+'" cy="'+Y(energyAt(now,true)).toFixed(1)+'" r="4" fill="#fff"/>');
+    parts.push('<circle cx="'+xNow+'" cy="'+Y(caffeineAt(now)).toFixed(1)+'" r="4" fill="#fff"/>');
     if(scrubT!=null){
-      const xs=X(scrubT).toFixed(1), ys=Y(energyAt(scrubT,true)).toFixed(1);
+      const xs=X(scrubT).toFixed(1), ys=Y(caffeineAt(scrubT)).toFixed(1);
       parts.push('<line x1="'+xs+'" y1="0" x2="'+xs+'" y2="'+H+'" stroke="rgba(107,227,164,0.7)" stroke-width="1.5" stroke-dasharray="3 3"/>');
       parts.push('<circle cx="'+xs+'" cy="'+ys+'" r="6" fill="#0e0e10" stroke="#6BE3A4" stroke-width="2.5"/>');
     }
