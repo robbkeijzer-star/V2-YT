@@ -724,15 +724,22 @@ body::after {
     return null;
   }
   function analysis(){
+    const now = nowHour();
     const pts = sampleCaffeine();
+    // Today's peak: highest level reached today (for reference/context only).
     let peakT=pts[0][0], peakV=pts[0][1];
     pts.forEach(([t,v])=>{ if(v>peakV){ peakV=v; peakT=t; } });
     const hasCaffeine = peakV > 1;
-    const halfT = hasCaffeine ? findThresholdTime(peakT, peakV/2) : null;
-    const clearedT = hasCaffeine ? findThresholdTime(peakT, 10) : null;
+    // Half-gone/cleared must be measured forward from your CURRENT level, not
+    // from the day's peak — doses logged after an earlier, bigger dose already
+    // decayed would otherwise make an old, already-passed crossing look current.
+    const nowMg = caffeineAt(now);
+    const hasActiveNow = nowMg > 1;
+    const halfT = hasActiveNow ? findThresholdTime(now, nowMg/2) : null;
+    const clearedT = hasActiveNow ? findThresholdTime(now, 10) : null;
     // COFFEE CUTOFF: latest time a 95mg coffee stays <30mg by bedtime
     const cutoff = bedHour - HALF_LIFE_H*Math.log2(95/30); // hours
-    return { peakT, peakV, hasCaffeine, halfT, clearedT, cutoff };
+    return { peakT, peakV, hasCaffeine, nowMg, hasActiveNow, halfT, clearedT, cutoff };
   }
 
   /* ============ Rendering ============ */
@@ -884,18 +891,18 @@ body::after {
     const peakMg=Math.round(a.peakV);
     // band
     $('peakVal').textContent = a.hasCaffeine ? (peakMg+' mg @ '+fmtClock(a.peakT)) : '—';
-    $('crashVal').textContent = a.halfT!=null ? fmtClock(a.halfT) : '—';
+    $('crashVal').textContent = a.halfT!=null ? fmtClock(a.halfT) : (a.hasActiveNow ? '—' : 'already clear');
     $('cutoffVal').textContent = fmtClock(a.cutoff);
-    $('clearedVal').textContent = a.clearedT!=null ? fmtClock(a.clearedT) : (a.hasCaffeine ? '—' : 'already clear');
+    $('clearedVal').textContent = a.clearedT!=null ? fmtClock(a.clearedT) : (a.hasActiveNow ? '—' : 'already clear');
     // tiles
     $('mPeak').textContent = a.hasCaffeine ? fmtClock(a.peakT) : '—';
     $('mPeakSub').textContent = a.hasCaffeine ? (peakMg+' mg — your highest level today.') : 'Log a drink to see your peak.';
-    $('mCrash').textContent = a.halfT!=null ? fmtClock(a.halfT) : '—';
-    $('mCrashSub').textContent = a.halfT!=null ? ('Drops to ~'+Math.round(a.peakV/2)+' mg by then.') : 'No caffeine active yet today.';
+    $('mCrash').textContent = a.halfT!=null ? fmtClock(a.halfT) : (a.hasActiveNow ? '—' : 'Already clear');
+    $('mCrashSub').textContent = a.halfT!=null ? ('Drops to ~'+Math.round(a.nowMg/2)+' mg by then.') : 'No caffeine active right now.';
     $('mCutoff').textContent = fmtClock(a.cutoff);
     $('mCutoffSub').textContent = 'Last coffee to keep <30 mg by your '+fmtClock(bedHour)+' bedtime.';
-    $('mCleared').textContent = a.clearedT!=null ? fmtClock(a.clearedT) : (a.hasCaffeine ? '—' : 'Already clear');
-    $('mClearedSub').textContent = a.clearedT!=null ? 'When you\'ll be fully caffeine-free (<10 mg).' : 'No caffeine active yet today.';
+    $('mCleared').textContent = a.clearedT!=null ? fmtClock(a.clearedT) : (a.hasActiveNow ? '—' : 'Already clear');
+    $('mClearedSub').textContent = a.clearedT!=null ? 'When you\'ll be fully caffeine-free (<10 mg).' : 'No caffeine active right now.';
 
     const bedTs=hToTs(bedHour < now ? bedHour+24 : bedHour);
     const atBed=Math.round(totalActiveAt(bedTs));
