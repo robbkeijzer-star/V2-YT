@@ -23,6 +23,7 @@
     const syncedKeys = (config && config.syncedKeys) || [];
     const syncedPrefixes = (config && config.syncedPrefixes) || [];
     const onApplied = config && config.onApplied;
+    const merge = config && config.merge;
     if (!appKey) return;
     if (!window.supabase) return;
     if (!SUPABASE_URL || !SUPABASE_KEY) return;
@@ -74,12 +75,23 @@
       if (!remote || typeof remote !== 'object') return false;
       suppressSync = true;
       let changed = false;
+      let needsPushBack = false;
       try {
         for (const k of Object.keys(remote)) {
           if (!matches(k)) continue;
-          const incoming = JSON.stringify(remote[k]);
-          const local = localStorage.getItem(k);
-          if (local !== incoming) {
+          const localRaw = localStorage.getItem(k);
+          let finalValue = remote[k];
+          if (typeof merge === 'function') {
+            let localParsed;
+            try { localParsed = localRaw == null ? undefined : JSON.parse(localRaw); } catch (e) { localParsed = localRaw; }
+            try {
+              const mergedResult = merge(k, localParsed, remote[k]);
+              if (mergedResult !== undefined) finalValue = mergedResult;
+            } catch (e) {}
+          }
+          const incoming = JSON.stringify(finalValue);
+          if (incoming !== JSON.stringify(remote[k])) needsPushBack = true;
+          if (localRaw !== incoming) {
             try { origSet(k, incoming); changed = true; } catch (e) {}
           }
         }
@@ -92,6 +104,7 @@
       if (changed && typeof onApplied === 'function') {
         try { onApplied(); } catch (e) {}
       }
+      if (needsPushBack) schedulePush();
       return changed;
     }
 

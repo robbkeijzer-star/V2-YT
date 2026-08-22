@@ -1998,9 +1998,32 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
+
+  function mergeById(localArr, remoteArr) {
+    const local = Array.isArray(localArr) ? localArr : [];
+    const remote = Array.isArray(remoteArr) ? remoteArr : [];
+    const byId = new Map();
+    for (const item of local) {
+      if (item && item.id != null) byId.set(item.id, item);
+    }
+    for (const item of remote) {
+      if (item && item.id != null) byId.set(item.id, item);
+    }
+    return Array.from(byId.values());
+  }
+
   initCloudSync({
     appKey: 'poop2',
     syncedKeys: ['poop2_v1'],
+    merge: function (key, localVal, remoteVal) {
+      if (key !== 'poop2_v1') return undefined;
+      const local = localVal || {};
+      const remote = remoteVal || {};
+      const merged = Object.assign({}, remote);
+      merged.entries = mergeById(local.entries, remote.entries);
+      merged.vacations = mergeById(local.vacations, remote.vacations);
+      return merged;
+    },
     onApplied: function () {
       window.dispatchEvent(new Event('storage'));
     }
