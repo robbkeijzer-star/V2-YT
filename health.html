@@ -72,8 +72,8 @@ body::after {
 main {
   position: relative; z-index: 2;
   max-width: 720px; margin: 0 auto;
-  padding: 56px 20px 80px;
-  padding-top: max(56px, env(safe-area-inset-top, 56px));
+  padding: 28px 20px 80px;
+  padding-top: max(28px, env(safe-area-inset-top, 28px));
 }
 
 .section-title {
@@ -503,11 +503,115 @@ main {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* ===== Page header + hamburger menu ===== */
+.app-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.app-title-left { display: flex; align-items: center; gap: 10px; }
+.app-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.app-live {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); flex-shrink: 0;
+  padding: 4px 9px; border-radius: 999px; background: rgba(29,158,117,0.14);
+  border: 1px solid rgba(29,158,117,0.35);
+}
+.app-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 8px rgba(29,158,117,0.65); animation: app-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes app-live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
+
+/* ===== Fact ticker ===== */
+.fact-ticker-row-wrap { margin-bottom: 24px; }
+.fact-ticker {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.30) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.fact-ticker::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  pointer-events: none; animation: fact-ticker-sweep 8s linear infinite;
+}
+@keyframes fact-ticker-sweep { 0% { left: -40%; } 100% { left: 110%; } }
+.fact-ticker-led { display: inline-flex; align-items: center; }
+.fact-ticker-led-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 8px rgba(29,158,117,0.7); animation: fact-led-pulse 1.6s ease-in-out infinite;
+}
+@keyframes fact-led-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.85); } }
+.fact-ticker-label { font-family: var(--font-mono); font-size: 9.5px; font-weight: 800; letter-spacing: 0.18em; color: var(--text-tertiary); }
+.fact-ticker-stage { position: relative; overflow: hidden; flex: 1; height: 20px; }
+.fact-ticker-item {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 1; transition: opacity 0.22s ease;
+}
+.fact-ticker-item.is-fading { opacity: 0; }
+.fact-ticker-meta {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.04); flex-shrink: 0;
+}
+.menu-btn {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05); color: var(--text-primary); font-size: 16px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+.menu-btn:active { background: rgba(255,255,255,0.1); }
+.menu-overlay {
+  position: fixed; inset: 0; z-index: 200; display: none;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.menu-overlay.show { display: block; }
+.menu-panel {
+  position: absolute; top: 0; left: 0; bottom: 0; width: 78%; max-width: 300px;
+  background: #0e0e10; border-right: 1px solid rgba(255,255,255,0.08);
+  padding: max(24px, env(safe-area-inset-top)) 16px 24px;
+  box-shadow: 12px 0 40px rgba(0,0,0,0.5);
+  transform: translateX(-100%); transition: transform 0.25s ease;
+  display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+}
+.menu-overlay.show .menu-panel { transform: translateX(0); }
+.menu-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.menu-title { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.menu-close { border: 0; background: transparent; color: var(--text-tertiary); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px; }
+.menu-close:hover { color: var(--text-primary); }
+.menu-link {
+  display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-radius: 12px;
+  text-decoration: none; color: var(--text-secondary); font-size: 15px; font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+.menu-link:active { background: rgba(255,255,255,0.06); }
+.menu-link.active { color: var(--text-primary); background: rgba(29,158,117,0.14); }
+.menu-link-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
 <main>
+
+  <div class="app-title-row">
+    <div class="app-title-left">
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">☰</button>
+      <h1 class="app-title">Health</h1>
+    </div>
+    <span class="app-live"><span class="app-live-dot"></span>Health Tracking</span>
+  </div>
+
+  <div class="fact-ticker-row-wrap">
+    <div class="fact-ticker" id="factTicker" aria-live="polite" aria-atomic="true">
+      <div class="fact-ticker-led"><span class="fact-ticker-led-dot"></span></div>
+      <div class="fact-ticker-label">FACTS</div>
+      <div class="fact-ticker-stage" id="factTickerStage">
+        <div class="fact-ticker-item">Loading…</div>
+      </div>
+      <div class="fact-ticker-meta" id="factTickerMeta">0</div>
+    </div>
+  </div>
 
   <!-- ===== WHOOP card (full) ===== -->
   <style>
@@ -1467,6 +1571,78 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
+
+<script>
+document.getElementById('menuBtn').addEventListener('click', () => document.getElementById('menuOverlay').classList.add('show'));
+document.getElementById('menuClose').addEventListener('click', () => document.getElementById('menuOverlay').classList.remove('show'));
+document.getElementById('menuOverlay').addEventListener('click', (e) => { if (e.target.id === 'menuOverlay') document.getElementById('menuOverlay').classList.remove('show'); });
+</script>
+
+<script>
+(function () {
+  function computeHealthFacts() {
+    let items = [];
+    try { items = JSON.parse(localStorage.getItem('stack:items')) || []; } catch (e) {}
+    let totalDoses = 0, daysWithDoses = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf('stack:taken:') !== 0) continue;
+      let taken = {};
+      try { taken = JSON.parse(localStorage.getItem(k)) || {}; } catch (e) {}
+      const count = Object.keys(taken).filter((id) => taken[id]).length;
+      if (count > 0) { totalDoses += count; daysWithDoses++; }
+    }
+    if (!items.length && !totalDoses) {
+      return { facts: ['💊 No supplements set up yet — add one to start tracking.'], meta: '0' };
+    }
+    const facts = [];
+    if (items.length) facts.push('💊 ' + items.length + ' supplement' + (items.length === 1 ? '' : 's') + ' in your stack');
+    if (daysWithDoses) {
+      facts.push('📅 Logged doses on ' + daysWithDoses + ' day' + (daysWithDoses === 1 ? '' : 's'));
+      facts.push('✅ ' + totalDoses + ' total dose' + (totalDoses === 1 ? '' : 's') + ' taken');
+    }
+    return { facts, meta: String(totalDoses) };
+  }
+  const factStage = document.getElementById('factTickerStage');
+  const factMeta = document.getElementById('factTickerMeta');
+  let factCycleIdx = 0, factTickerTimer = null, factFirstTick = true;
+  function factTick() {
+    const { facts, meta } = computeHealthFacts();
+    if (factCycleIdx >= facts.length) factCycleIdx = 0;
+    const text = facts[factCycleIdx];
+    factCycleIdx = (factCycleIdx + 1) % facts.length;
+    factMeta.textContent = meta;
+    let item = factStage.querySelector('.fact-ticker-item');
+    if (!item) { item = document.createElement('div'); item.className = 'fact-ticker-item'; factStage.appendChild(item); }
+    const apply = () => { item.textContent = text; item.classList.remove('is-fading'); };
+    if (factFirstTick) { apply(); factFirstTick = false; return; }
+    item.classList.add('is-fading');
+    setTimeout(apply, 220);
+  }
+  function startFactTicker() {
+    factTick();
+    if (factTickerTimer) clearInterval(factTickerTimer);
+    factTickerTimer = setInterval(factTick, 5000);
+  }
+  startFactTicker();
+})();
+</script>
+
+<div class="menu-overlay" id="menuOverlay">
+  <div class="menu-panel">
+    <div class="menu-head">
+      <span class="menu-title">Menu</span>
+      <button class="menu-close" id="menuClose" type="button" aria-label="Close">×</button>
+    </div>
+    <a class="menu-link" href="main.html"><span class="menu-link-icon">🏠</span>Main</a>
+    <a class="menu-link active" href="health.html"><span class="menu-link-icon">💊</span>Health</a>
+    <a class="menu-link" href="po-water.html"><span class="menu-link-icon">💧</span>Water</a>
+    <a class="menu-link" href="caffeine.html"><span class="menu-link-icon">☕</span>Caffeine</a>
+    <a class="menu-link" href="caffeine2.html"><span class="menu-link-icon">☕</span>Caffeine 2.0</a>
+    <a class="menu-link" href="poop.html"><span class="menu-link-icon">💩</span>Poop</a>
+    <a class="menu-link" href="poop2.html"><span class="menu-link-icon">📸</span>Poop 2.0</a>
+  </div>
+</div>
 
 </body>
 </html>

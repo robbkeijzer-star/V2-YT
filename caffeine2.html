@@ -51,8 +51,58 @@ body::after {
 @keyframes drift { 0%{transform:translate3d(0,0,0)} 100%{transform:translate3d(-22px,14px,0)} }
 
 .page { max-width: 1100px; margin: 0 auto; }
-.title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-.title-row .dash-title { margin-bottom: 0; }
+.app-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.app-title-left { display: flex; align-items: center; gap: 10px; }
+.app-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.app-live {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--caf); flex-shrink: 0;
+  padding: 4px 9px; border-radius: 999px; background: rgba(201,163,107,0.14);
+  border: 1px solid rgba(201,163,107,0.35);
+}
+.app-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--caf);
+  box-shadow: 0 0 8px rgba(201,163,107,0.65); animation: app-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes app-live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
+
+/* ===== Fact ticker ===== */
+.fact-ticker-row-wrap { margin-bottom: 14px; }
+.fact-ticker {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.30) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.fact-ticker::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  pointer-events: none; animation: fact-ticker-sweep 8s linear infinite;
+}
+@keyframes fact-ticker-sweep { 0% { left: -40%; } 100% { left: 110%; } }
+.fact-ticker-led { display: inline-flex; align-items: center; }
+.fact-ticker-led-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--caf);
+  box-shadow: 0 0 8px rgba(201,163,107,0.7); animation: fact-led-pulse 1.6s ease-in-out infinite;
+}
+@keyframes fact-led-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.85); } }
+.fact-ticker-label { font-family: var(--font-mono); font-size: 9.5px; font-weight: 800; letter-spacing: 0.18em; color: var(--text-tertiary); }
+.fact-ticker-stage { position: relative; overflow: hidden; flex: 1; height: 20px; }
+.fact-ticker-item {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 1; transition: opacity 0.22s ease;
+}
+.fact-ticker-item.is-fading { opacity: 0; }
+.fact-ticker-meta {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-secondary);
+  padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.04); flex-shrink: 0;
+}
+
 .dash-title {
   margin: 0 0 14px; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
   background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
@@ -281,9 +331,23 @@ body::after {
 <body>
 <div class="page">
 
-  <div class="title-row">
-    <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">☰</button>
-    <h1 class="dash-title">Caffeine 2.0</h1>
+  <div class="app-title-row">
+    <div class="app-title-left">
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">☰</button>
+      <h1 class="app-title">Caffeine 2.0</h1>
+    </div>
+    <span class="app-live"><span class="app-live-dot"></span>Caffeine Tracking</span>
+  </div>
+
+  <div class="fact-ticker-row-wrap">
+    <div class="fact-ticker" id="factTicker" aria-live="polite" aria-atomic="true">
+      <div class="fact-ticker-led"><span class="fact-ticker-led-dot"></span></div>
+      <div class="fact-ticker-label">FACTS</div>
+      <div class="fact-ticker-stage" id="factTickerStage">
+        <div class="fact-ticker-item">Loading…</div>
+      </div>
+      <div class="fact-ticker-meta" id="factTickerMeta">0</div>
+    </div>
   </div>
 
   <!-- ENERGY CURVE -->
@@ -421,8 +485,9 @@ body::after {
     <a class="menu-link" href="main.html"><span class="menu-link-icon">🏠</span>Main</a>
     <a class="menu-link" href="health.html"><span class="menu-link-icon">💊</span>Health</a>
     <a class="menu-link" href="po-water.html"><span class="menu-link-icon">💧</span>Water</a>
-    <a class="menu-link" href="caffeine.html"><span class="menu-link-icon">☕</span>Caffeine (old)</a>
+    <a class="menu-link" href="caffeine.html"><span class="menu-link-icon">☕</span>Caffeine</a>
     <a class="menu-link active" href="caffeine2.html"><span class="menu-link-icon">☕</span>Caffeine 2.0</a>
+    <a class="menu-link" href="poop.html"><span class="menu-link-icon">💩</span>Poop</a>
     <a class="menu-link" href="poop2.html"><span class="menu-link-icon">📸</span>Poop 2.0</a>
 
     <div class="menu-divider"></div>
@@ -1078,6 +1143,51 @@ body::after {
   renderAll();
   loadWhoop();
   setInterval(()=>{ if(scrubT==null) renderAll(); }, 60000);
+
+  /* ============ Fact ticker ============ */
+  function computeCaffeineFacts(){
+    const total=logs.length;
+    if(!total) return { facts:['☕ No drinks logged yet — get started!'], meta:'0' };
+    const sorted=logs.slice().sort((a,b)=>a.ts-b.ts);
+    const first=new Date(sorted[0].ts); first.setHours(0,0,0,0);
+    const today0=new Date(); today0.setHours(0,0,0,0);
+    const daysTracking=Math.round((today0-first)/86400000)+1;
+    const totalMg=Math.round(logs.reduce((a,l)=>a+l.mg,0));
+    const avgPerDay=Math.round(totalMg/daysTracking);
+    const nameCounts={};
+    logs.forEach(l=>{ nameCounts[l.n]=(nameCounts[l.n]||0)+1; });
+    let topName=null, topCount=0;
+    Object.keys(nameCounts).forEach(k=>{ if(nameCounts[k]>topCount){ topCount=nameCounts[k]; topName=k; } });
+    const facts=[
+      '☕ '+total+' drink'+(total===1?'':'s')+' logged in total',
+      '📅 Tracking for '+daysTracking+' day'+(daysTracking===1?'':'s'),
+      '⚡ '+totalMg+' mg of caffeine logged in total',
+      '📊 Average '+avgPerDay+' mg per day since you started',
+    ];
+    if(topName) facts.push('🏆 Most logged: '+topName+' ('+topCount+'x)');
+    return { facts, meta:String(total) };
+  }
+  const factStage=$('factTickerStage'), factMeta=$('factTickerMeta');
+  let factCycleIdx=0, factTickerTimer=null, factFirstTick=true;
+  function factTick(){
+    const {facts,meta}=computeCaffeineFacts();
+    if(factCycleIdx>=facts.length) factCycleIdx=0;
+    const text=facts[factCycleIdx];
+    factCycleIdx=(factCycleIdx+1)%facts.length;
+    factMeta.textContent=meta;
+    let item=factStage.querySelector('.fact-ticker-item');
+    if(!item){ item=document.createElement('div'); item.className='fact-ticker-item'; factStage.appendChild(item); }
+    const apply=()=>{ item.textContent=text; item.classList.remove('is-fading'); };
+    if(factFirstTick){ apply(); factFirstTick=false; return; }
+    item.classList.add('is-fading');
+    setTimeout(apply,220);
+  }
+  function startFactTicker(){
+    factTick();
+    if(factTickerTimer) clearInterval(factTickerTimer);
+    factTickerTimer=setInterval(factTick,5000);
+  }
+  startFactTicker();
 
   /* ============ Cloud sync ============ */
   function keyOf(item){ return item && item.id!=null ? ('id:'+item.id) : ('nm:'+(item&&item.n)+'|'+(item&&item.mg)); }

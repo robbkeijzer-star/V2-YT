@@ -403,7 +403,7 @@ body::after {
   function loadJSON(k, f) { try { return JSON.parse(localStorage.getItem(k)) || f; } catch (e) { return f; } }
   function saveJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
-  // Mirror of topbar.js defaultWaterState so we never clobber the water tracker.
+  // Default water-tracker state so we never clobber it before it's been set up.
   function defaultWater() {
     return { unit:'bottle', bottleMl:500, glassMl:250, weightUnit:'kg',
       profile:{ weightKg:75, age:25, sex:'m', activityHrsPerWeek:5 },
