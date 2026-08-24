@@ -496,7 +496,7 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   <div class="app-title-row">
     <div class="app-title-left">
       <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">☰</button>
-      <h1 class="app-title">Robin Daily</h1>
+      <h1 class="app-title">DailyTrack__Robin</h1>
     </div>
     <span class="app-live"><span class="app-live-dot"></span>Poop Tracking</span>
   </div>
@@ -720,8 +720,8 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     <a class="menu-link" href="main.html"><span class="menu-link-icon">🏠</span>Main</a>
     <a class="menu-link" href="health.html"><span class="menu-link-icon">💊</span>Health</a>
     <a class="menu-link" href="po-water.html"><span class="menu-link-icon">💧</span>Water</a>
-    <a class="menu-link" href="caffeine2.html"><span class="menu-link-icon">☕</span>Caffeine 2.0</a>
-    <a class="menu-link active" href="poop2.html"><span class="menu-link-icon">📸</span>Poop 2.0</a>
+    <a class="menu-link" href="caffeine2.html"><span class="menu-link-icon">☕</span>Caffeine</a>
+    <a class="menu-link active" href="poop2.html"><span class="menu-link-icon">📸</span>Poop</a>
   </div>
 </div>
 
@@ -798,8 +798,9 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
     try {
       const s = JSON.parse(localStorage.getItem(KEY)) || { entries: [] };
       if (!s.vacations) s.vacations = s.vacation ? [s.vacation] : [];
+      if (!Array.isArray(s.deletedIds)) s.deletedIds = [];
       return s;
-    } catch (e) { return { entries: [], vacations: [] }; }
+    } catch (e) { return { entries: [], vacations: [], deletedIds: [] }; }
   }
   function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
 
@@ -929,6 +930,8 @@ textarea.set-input { resize: vertical; min-height: 56px; font-family: inherit; }
   }
   function deleteEntry(id) {
     state.entries = state.entries.filter((e) => e.id !== id);
+    if (!state.deletedIds) state.deletedIds = [];
+    if (!state.deletedIds.includes(id)) state.deletedIds.push(id);
     save(state);
     renderAll();
     if (currentDayDetailKey && document.getElementById('dayDetailBg').classList.contains('show')) {
@@ -2016,9 +2019,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if (key !== 'poop2_v1') return undefined;
       const local = localVal || {};
       const remote = remoteVal || {};
+      const deletedIds = new Set([...(local.deletedIds || []), ...(remote.deletedIds || [])]);
       const merged = Object.assign({}, remote);
-      merged.entries = mergeById(local.entries, remote.entries);
-      merged.vacations = mergeById(local.vacations, remote.vacations);
+      merged.entries = mergeById(local.entries, remote.entries).filter((e) => !deletedIds.has(e.id));
+      merged.vacations = mergeById(local.vacations, remote.vacations).filter((v) => !deletedIds.has(v.id));
+      merged.deletedIds = Array.from(deletedIds);
       return merged;
     },
     onApplied: function () {
