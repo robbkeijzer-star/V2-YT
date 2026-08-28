@@ -290,7 +290,8 @@ body::after {
 .result { display: flex; align-items: center; gap: 12px; padding: 11px 12px; margin-bottom: 6px;
   background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .result:hover { background: rgba(201,163,107,0.10); border-color: rgba(201,163,107,0.30); }
-.result-emoji { font-size: 20px; flex-shrink: 0; width: 24px; text-align: center; }
+.result-emoji { font-size: 20px; flex-shrink: 0; width: 24px; text-align: center; display: flex; align-items: center; justify-content: center; }
+.result-emoji img { width: 20px; height: 20px; object-fit: contain; }
 .result-name { flex: 1; font-size: 14px; color: var(--text-primary); }
 .result-cat { font-size: 11px; color: var(--text-tertiary); }
 .result-mg { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #E7C690; font-variant-numeric: tabular-nums; }
@@ -323,7 +324,8 @@ body::after {
 .log-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px;
   border-radius: 11px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
 .log-emoji { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.05);
-  display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; overflow: hidden; }
+.log-emoji img { width: 100%; height: 100%; object-fit: contain; padding: 3px; box-sizing: border-box; }
 .log-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .log-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log-name b { font-family: var(--font-mono); color: #E7C690; font-weight: 700; margin-left: 5px; }
@@ -603,7 +605,7 @@ body::after {
 
   /* ============ Beverage database ============ */
   const DB = [
-    {n:'Red Bull (12 oz)',mg:114,c:'Energy',e:'⚡'},{n:'Monster Ultra (16 oz)',mg:150,c:'Energy',e:'⚡'},
+    {n:'Red Bull (12 oz)',mg:114,c:'Energy',e:'⚡'},{n:'Monster Ultra (16 oz)',mg:150,c:'Energy',e:'⚡',img:'magic_edit-1.png'},
     {n:'Monster White (16 oz)',mg:160,c:'Energy',e:'⚡'},
     {n:'Brewed coffee (8 oz)',mg:95,c:'Coffee',e:'☕'},{n:'Brewed coffee (12 oz)',mg:140,c:'Coffee',e:'☕'},
     {n:'Brewed coffee (16 oz)',mg:190,c:'Coffee',e:'☕'},{n:'Cold brew (16 oz)',mg:205,c:'Coffee',e:'🧊'},
@@ -947,12 +949,13 @@ body::after {
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function iconHtml(item){ return item && item.img ? '<img src="'+item.img+'" alt="">' : (item && item.e ? item.e : '☕'); }
   function renderLog(){
     const list=$('logList'); const tl=todaysLogs().slice().sort((a,b)=>b.ts-a.ts); list.innerHTML='';
     if(tl.length===0){ const li=document.createElement('li'); li.className='empty-state'; li.textContent='No drinks logged today — search one above to start tracking.'; list.appendChild(li); return; }
     tl.forEach(l=>{
       const li=document.createElement('li'); li.className='log-row';
-      li.innerHTML='<div class="log-emoji">'+(l.e||'☕')+'</div>'
+      li.innerHTML='<div class="log-emoji">'+iconHtml(l)+'</div>'
         +'<div class="log-main"><span class="log-name">'+escapeHtml(l.n)+'<b>'+l.mg+' mg</b></span><span class="log-time">'+fmtTime(l.ts)+'</span></div>'
         +'<button class="log-edit" type="button" aria-label="Edit">i</button>'
         +'<button class="log-dup" type="button" aria-label="Duplicate">⧉</button>'
@@ -1186,13 +1189,13 @@ body::after {
   /* ============ Logging / search / custom ============ */
   function logDrink(item){
     const ts = retroTs!=null ? retroTs : Date.now();
-    logs.push({id:uid('c'), n:item.n, mg:Math.round(item.mg), e:item.e||'☕', ts});
+    logs.push({id:uid('c'), n:item.n, mg:Math.round(item.mg), e:item.e||'☕', img:item.img||null, ts});
     saveJSON(LOGS_KEY,logs); renderAll();
     if(retroTs!=null) showToast('Logged '+item.n+' for '+new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' at '+fmtClock(new Date(ts).getHours()+new Date(ts).getMinutes()/60));
   }
   function duplicateLog(entry){
     const ts = entry.ts + 60000;
-    logs.push({id:uid('c'), n:entry.n, mg:entry.mg, e:entry.e, ts});
+    logs.push({id:uid('c'), n:entry.n, mg:entry.mg, e:entry.e, img:entry.img||null, ts});
     saveJSON(LOGS_KEY,logs); renderAll();
     showToast('Duplicated '+entry.n);
   }
@@ -1222,7 +1225,7 @@ body::after {
     el.innerHTML='';
     if(items.length===0){ const li=document.createElement('li'); li.className='results-empty'; li.textContent='No match — add it as a custom drink below.'; el.appendChild(li); return; }
     items.forEach(d=>{ const li=document.createElement('li'); li.className='result';
-      li.innerHTML='<span class="result-emoji">'+(d.e||'☕')+'</span><span class="result-name">'+escapeHtml(d.n)+' <span class="result-cat">· '+d.c+'</span></span><span class="result-mg">'+d.mg+'<small> mg</small></span>';
+      li.innerHTML='<span class="result-emoji">'+iconHtml(d)+'</span><span class="result-name">'+escapeHtml(d.n)+' <span class="result-cat">· '+d.c+'</span></span><span class="result-mg">'+d.mg+'<small> mg</small></span>';
       li.addEventListener('click',()=>{ logDrink(d); $('search').value=''; renderResults(''); }); el.appendChild(li); });
   }
   function addCustom(){
