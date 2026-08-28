@@ -917,7 +917,7 @@ body::after {
 
     // tips
     const tips=[];
-    tips.push(['☀️','Front-load it. Caffeine works best 30–90 min after waking — aim your first cup near '+fmtClock(wakeHour+0.5)+'.']);
+    tips.push(['☀️','Front-load it. Caffeine works best 30–90 min after waking — aim your first cup near '+fmtClock(wakeHour+1.5)+'.']);
     if(a.cutoff < now) tips.push(['🌙','It\'s past your coffee cutoff ('+fmtClock(a.cutoff)+'). More caffeine now will likely cost you sleep tonight.']);
     else tips.push(['🌙','You can still have coffee until ~'+fmtClock(a.cutoff)+' without wrecking your '+fmtClock(bedHour)+' bedtime.']);
     if(atBed>=50) tips.push(['⚠️','~'+atBed+' mg will still be active at bedtime — that\'s enough to delay deep sleep. Ease off.']);
