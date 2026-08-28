@@ -628,11 +628,12 @@ body::after {
   ];
 
   /* ============ Storage ============ */
-  const LOGS_KEY='caf:logs', CUSTOM_KEY='caf:custom';
+  const LOGS_KEY='caf:logs', CUSTOM_KEY='caf:custom', DELETED_KEY='caf:deletedLogIds';
   function loadJSON(k,f){ try { return JSON.parse(localStorage.getItem(k)) || f; } catch(e){ return f; } }
   function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
   function uid(prefix){ return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   let logs = loadJSON(LOGS_KEY, []);
+  let deletedLogIds = loadJSON(DELETED_KEY, []);
   function migrateMonsterWhiteToUltra(arr){
     const target = DB.find(d=>d.n==='Monster Ultra (16 oz)');
     if(!target) return false;
@@ -645,7 +646,21 @@ body::after {
     });
     return changed;
   }
+  function sweepDeleted(arr, ids){
+    if(!ids || !ids.length) return false;
+    const before=arr.length;
+    for(let i=arr.length-1;i>=0;i--){ if(ids.includes(arr[i].id)) arr.splice(i,1); }
+    return arr.length!==before;
+  }
+  function deleteLog(id){
+    if(!deletedLogIds.includes(id)) deletedLogIds.push(id);
+    logs = logs.filter(x=>x.id!==id);
+    saveJSON(LOGS_KEY, logs);
+    saveJSON(DELETED_KEY, deletedLogIds);
+    renderAll();
+  }
   if(migrateMonsterWhiteToUltra(logs)) saveJSON(LOGS_KEY, logs);
+  if(sweepDeleted(logs, deletedLogIds)) saveJSON(LOGS_KEY, logs);
   let custom = loadJSON(CUSTOM_KEY, []);
 
   /* ============ Personal data ============ */
@@ -1013,7 +1028,7 @@ body::after {
         +'<button class="log-del" type="button" aria-label="Delete">×</button>';
       li.querySelector('.log-edit').addEventListener('click',()=>openEdit(l));
       li.querySelector('.log-dup').addEventListener('click',()=>duplicateLog(l));
-      li.querySelector('.log-del').addEventListener('click',()=>{ logs=logs.filter(x=>x.id!==l.id); saveJSON(LOGS_KEY,logs); renderAll(); });
+      li.querySelector('.log-del').addEventListener('click',()=>deleteLog(l.id));
       list.appendChild(li);
     });
   }
@@ -1261,10 +1276,9 @@ body::after {
   }
   function deleteEdit(){
     if(editingId==null) return;
-    logs = logs.filter(x=>x.id!==editingId);
-    saveJSON(LOGS_KEY, logs);
+    const id=editingId;
     closeEdit();
-    renderAll();
+    deleteLog(id);
   }
 
   /* ============ Logging / search / custom ============ */
@@ -1421,18 +1435,26 @@ body::after {
     for(const item of remote) map.set(keyOf(item), item);
     return Array.from(map.values());
   }
+  function mergeIds(localArr, remoteArr){
+    const local=Array.isArray(localArr)?localArr:[], remote=Array.isArray(remoteArr)?remoteArr:[];
+    return Array.from(new Set(local.concat(remote)));
+  }
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof initCloudSync !== 'function') return;
     initCloudSync({
       appKey:'caffeine',
-      syncedKeys:[LOGS_KEY,CUSTOM_KEY],
+      syncedKeys:[LOGS_KEY,CUSTOM_KEY,DELETED_KEY],
       merge:function(key, localVal, remoteVal){
         if(key===LOGS_KEY || key===CUSTOM_KEY) return mergeByKey(localVal, remoteVal);
+        if(key===DELETED_KEY) return mergeIds(localVal, remoteVal);
         return undefined;
       },
       onApplied:function(){
-        logs=loadJSON(LOGS_KEY,[]); custom=loadJSON(CUSTOM_KEY,[]);
-        if(migrateMonsterWhiteToUltra(logs)) saveJSON(LOGS_KEY, logs);
+        logs=loadJSON(LOGS_KEY,[]); custom=loadJSON(CUSTOM_KEY,[]); deletedLogIds=loadJSON(DELETED_KEY,[]);
+        let dirty=false;
+        if(migrateMonsterWhiteToUltra(logs)) dirty=true;
+        if(sweepDeleted(logs, deletedLogIds)) dirty=true;
+        if(dirty) saveJSON(LOGS_KEY, logs);
         renderResults($('search').value); renderAll();
       }
     });
