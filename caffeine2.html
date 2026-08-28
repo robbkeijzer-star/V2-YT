@@ -485,7 +485,6 @@ body::after {
         <span class="daily-active" id="dailyActive"></span>
       </div>
       <div class="bar-track"><div class="bar-fill" id="dailyFill" style="width:0%"></div></div>
-      <ul class="log-list" id="dailyLastRow" style="display:none;"></ul>
       <div class="daily-msg good" id="dailyMsg">You haven't logged anything today.</div>
       <div class="daily-note" id="dailyNote"></div>
     </div>
@@ -942,12 +941,6 @@ body::after {
     else if(total>=limit){ msg.classList.add('bad'); msg.textContent="⚠️ That's over your limit for today — ease off the caffeine."; }
     else if(total>=target){ msg.classList.add('warn'); msg.textContent="Getting up there. "+(limit-total)+" mg until your ceiling."; }
     else { msg.classList.add('good'); msg.textContent="You're in a good range — "+(target-total)+" mg under your target."; }
-    const lastRow=$('dailyLastRow'); const tl=todaysLogs().slice().sort((a,b)=>b.ts-a.ts);
-    if(tl.length){
-      const l=tl[0];
-      lastRow.innerHTML='<li class="log-row"><div class="log-emoji">'+iconHtml(l)+'</div><div class="log-main"><span class="log-name">'+escapeHtml(l.n)+'</span><span class="log-time">Logged at '+fmtTime(l.ts)+'</span></div></li>';
-      lastRow.style.display='';
-    } else { lastRow.innerHTML=''; lastRow.style.display='none'; }
     const parts=[];
     if(bodyKg) parts.push('Target ~'+target+' mg (3 mg/kg for '+Math.round(bodyKg)+' kg). Ceiling '+limit+' mg.');
     else parts.push('Using the 400 mg/day ceiling — add your weight in Settings for a personalized target.');
