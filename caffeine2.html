@@ -177,7 +177,15 @@ body::after {
 .energy-hint .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--energy); }
 .energy-desc { margin-top: 12px; font-size: 13px; color: var(--text-tertiary); line-height: 1.5; }
 
-.seg-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.25); flex-shrink: 0; margin-left: auto; }
+.seg-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.25); flex-shrink: 0; }
+.extend-toggle {
+  width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.10); margin-left: auto;
+  background: rgba(255,255,255,0.04); color: var(--text-secondary); font-size: 15px; font-weight: 700; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent; transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.extend-toggle:hover { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+.extend-toggle.on { background: rgba(201,163,107,0.18); border-color: var(--caf); color: var(--caf); }
 .seg-toggle button {
   border: 0; background: transparent; color: var(--text-tertiary);
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em;
@@ -417,6 +425,7 @@ body::after {
         <button class="day-nav-btn" id="dayPrevBtn" type="button" aria-label="Previous day">‹</button>
         <span class="day-nav-label" id="dayNavLabel">Today</span>
         <button class="day-nav-btn" id="dayNextBtn" type="button" aria-label="Next day" disabled>›</button>
+        <button class="extend-toggle" id="extendToggle" type="button" aria-label="Show through tomorrow noon" aria-pressed="false">+</button>
         <div class="seg-toggle" id="modeToggle">
           <button data-m="line" class="on">LINE</button>
           <button data-m="stack">STACK</button>
@@ -426,7 +435,7 @@ body::after {
       <div class="curve-wrap" id="curveWrap">
         <svg id="energyChart" viewBox="0 0 600 230" preserveAspectRatio="none"></svg>
       </div>
-      <div class="axis">
+      <div class="axis" id="axis">
         <span>12A</span><span>3A</span><span>6A</span><span>9A</span><span>12P</span><span>3P</span><span>6P</span><span>9P</span><span>12A</span>
       </div>
 
@@ -749,7 +758,21 @@ body::after {
 
   /* ---- Caffeine-level curve (intake + decay), used by the ring + hero chart ---- */
   function caffeineAt(t){ return totalActiveAt(hToTsView(t)); }
-  function sampleCaffeine(){ const pts=[]; for(let i=0;i<=144;i++){ const t=i/6; pts.push([t, caffeineAt(t)]); } return pts; }
+  function sampleCaffeineSpan(hours){ const pts=[]; const steps=hours*6; for(let i=0;i<=steps;i++){ const t=i/6; pts.push([t, caffeineAt(t)]); } return pts; }
+  function sampleCaffeine(){ return sampleCaffeineSpan(24); }
+  let extendedView = false;
+  function toggleExtend(){
+    extendedView = !extendedView;
+    $('extendToggle').classList.toggle('on', extendedView);
+    $('extendToggle').setAttribute('aria-pressed', String(extendedView));
+    renderChart();
+  }
+  function renderAxis(){
+    const spanH = extendedView ? 36 : 24;
+    const labels=['12A','3A','6A','9A','12P','3P','6P','9P','12A','3A','6A','9A','12P'];
+    const count = spanH/3 + 1;
+    $('axis').innerHTML = labels.slice(0, count).map(l=>'<span>'+l+'</span>').join('');
+  }
   function caffeineYMax(pts){
     const maxVal = pts.reduce((m,p)=>Math.max(m,p[1]), 0);
     return Math.max(100, Math.ceil((maxVal*1.15)/50)*50);
@@ -791,15 +814,20 @@ body::after {
   function renderChart(){
     const svg=$('energyChart'); const W=600,H=230,padT=14,padB=8;
     const now=nowHour();
-    const pts=sampleCaffeine();
+    const spanH = extendedView ? 36 : 24;
+    const pts=sampleCaffeineSpan(spanH);
     const yMax=caffeineYMax(pts);
-    const X=(t)=> (t/24)*W;
+    const X=(t)=> (t/spanH)*W;
     const Y=(v)=> H-padB-(v/yMax)*(H-padB-padT);
+    renderAxis();
     let parts=[];
     // night shading (asleep regions)
     const nightFill='rgba(255,255,255,0.025)';
     parts.push('<rect x="0" y="0" width="'+X(wakeHour)+'" height="'+H+'" fill="'+nightFill+'"/>');
-    parts.push('<rect x="'+X(bedHour)+'" y="0" width="'+(W-X(bedHour))+'" height="'+H+'" fill="'+nightFill+'"/>');
+    parts.push('<rect x="'+X(bedHour)+'" y="0" width="'+(X(24)-X(bedHour))+'" height="'+H+'" fill="'+nightFill+'"/>');
+    if(extendedView){
+      parts.push('<rect x="'+X(24)+'" y="0" width="'+(X(24+wakeHour)-X(24))+'" height="'+H+'" fill="'+nightFill+'"/>');
+    }
     // gridlines (dynamic, quarter steps of the mg scale)
     const gStep=yMax/4;
     for(let g=gStep; g<=yMax+0.001; g+=gStep){
@@ -1196,7 +1224,8 @@ body::after {
   function scrubFromEvent(e){
     const wrap=$('curveWrap'); const rect=wrap.getBoundingClientRect();
     const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    scrubT=clamp((cx/rect.width)*24,0,24); renderRing(); renderChart();
+    const spanH = extendedView ? 36 : 24;
+    scrubT=clamp((cx/rect.width)*spanH,0,spanH); renderRing(); renderChart();
   }
   function endScrub(){ scrubT=null; renderRing(); renderChart(); }
   const wrap=$('curveWrap');
@@ -1229,6 +1258,7 @@ body::after {
   $('calPrevBtn').addEventListener('click',calPrevMonth);
   $('calNextBtn').addEventListener('click',calNextMonth);
   $('calToggle').addEventListener('click',toggleCal);
+  $('extendToggle').addEventListener('click',toggleExtend);
 
   readProfile();
   renderResults('');
