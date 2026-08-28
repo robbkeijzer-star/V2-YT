@@ -587,6 +587,13 @@ body::after {
       <input class="gm-input" id="editDate" type="date">
       <input class="gm-input" id="editTime" type="time">
     </div>
+    <div>
+      <button class="retro-toggle" id="editSwapToggle" type="button">🔁 Swap to a different drink</button>
+    </div>
+    <div class="retro-panel" id="editSwapPanel" style="display:none; flex-direction:column; align-items:stretch;">
+      <input class="gm-input" id="editSwapSearch" type="text" placeholder="Search a drink…" autocomplete="off">
+      <ul class="results" id="editSwapResults"></ul>
+    </div>
     <div class="modal-actions">
       <button class="modal-del" id="editDelete" type="button">Delete</button>
       <button class="gm-add" id="editSave" type="button">Save</button>
@@ -1196,15 +1203,44 @@ body::after {
 
   /* ============ Edit modal ============ */
   let editingId = null;
+  let editSwapItem = null;
   function openEdit(entry){
     editingId = entry.id;
+    editSwapItem = null;
     $('editName').value = entry.n;
     $('editMg').value = entry.mg;
     $('editDate').value = fmtDateInput(entry.ts);
     $('editTime').value = fmtTimeInput(entry.ts);
+    $('editSwapPanel').style.display = 'none';
+    $('editSwapSearch').value = '';
     $('editBg').classList.add('open');
   }
-  function closeEdit(){ editingId = null; $('editBg').classList.remove('open'); }
+  function closeEdit(){ editingId = null; editSwapItem = null; $('editBg').classList.remove('open'); }
+  function renderEditSwapResults(q){
+    const el=$('editSwapResults'); const query=(q||'').trim().toLowerCase(); let items=allDrinks();
+    if(query){
+      items=items.filter(d=>d.n.toLowerCase().includes(query)||d.c.toLowerCase().includes(query)).slice(0,40);
+    } else {
+      const rank=new Map(recentDrinkKeys(items.length).map((k,i)=>[k,i]));
+      items=items.slice().sort((a,b)=>{
+        const ra=rank.has(a.n+'|'+a.mg) ? rank.get(a.n+'|'+a.mg) : Infinity;
+        const rb=rank.has(b.n+'|'+b.mg) ? rank.get(b.n+'|'+b.mg) : Infinity;
+        return ra-rb;
+      }).slice(0,12);
+    }
+    el.innerHTML='';
+    items.forEach(d=>{ const li=document.createElement('li'); li.className='result';
+      li.innerHTML='<span class="result-emoji">'+iconHtml(d, false)+'</span><span class="result-name">'+escapeHtml(d.n)+' <span class="result-cat">· '+d.c+'</span></span><span class="result-mg">'+d.mg+'<small> mg</small></span>';
+      li.addEventListener('click',()=>{
+        editSwapItem = d;
+        $('editName').value = d.n;
+        $('editMg').value = Math.round(d.mg);
+        $('editSwapPanel').style.display = 'none';
+        $('editSwapSearch').value = '';
+      });
+      el.appendChild(li);
+    });
+  }
   function saveEdit(){
     if(editingId==null) return;
     const idx = logs.findIndex(x=>x.id===editingId);
@@ -1216,7 +1252,8 @@ body::after {
     const d = new Date(dv+'T'+tv+':00');
     if(isNaN(d.getTime())) return;
     const oldDay = dayKey(logs[idx].ts), newTs = d.getTime(), newDay = dayKey(newTs);
-    logs[idx] = Object.assign({}, logs[idx], { n:name, mg:mg, ts:newTs });
+    const swapFields = editSwapItem ? { e:editSwapItem.e||'☕', img:editSwapItem.img||null, glow:editSwapItem.glow||null } : {};
+    logs[idx] = Object.assign({}, logs[idx], { n:name, mg:mg, ts:newTs }, swapFields);
     saveJSON(LOGS_KEY, logs);
     closeEdit();
     renderAll();
@@ -1308,6 +1345,13 @@ body::after {
   $('editSave').addEventListener('click',saveEdit);
   $('editDelete').addEventListener('click',deleteEdit);
   $('editBg').addEventListener('click',(e)=>{ if(e.target.id==='editBg') closeEdit(); });
+  $('editSwapToggle').addEventListener('click',()=>{
+    const panel=$('editSwapPanel');
+    const open = panel.style.display!=='none';
+    if(open){ panel.style.display='none'; }
+    else { panel.style.display='flex'; renderEditSwapResults(''); $('editSwapSearch').focus(); }
+  });
+  $('editSwapSearch').addEventListener('input',(e)=>renderEditSwapResults(e.target.value));
   $('menuBtn').addEventListener('click',()=>$('menuOverlay').classList.add('show'));
   $('menuClose').addEventListener('click',()=>$('menuOverlay').classList.remove('show'));
   $('menuOverlay').addEventListener('click',(e)=>{ if(e.target.id==='menuOverlay') $('menuOverlay').classList.remove('show'); });
