@@ -185,7 +185,7 @@ body::after {
 }
 .seg-toggle button.on { background: rgba(107,227,164,0.15); color: var(--energy); }
 
-.day-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px; }
+.day-nav { display: flex; align-items: center; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
 .day-nav-btn { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.04); color: var(--text-secondary); font-size: 15px; line-height: 1;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -364,9 +364,6 @@ body::after {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
   .gm-card { padding: 16px; }
   .curve-wrap svg { height: 200px; }
-  .ring { order: 1; }
-  .seg-toggle { order: 2; margin-left: 0; }
-  .energy-label { order: 3; flex-basis: 100%; }
 }
 </style>
 </head>
@@ -412,10 +409,6 @@ body::after {
           <span class="energy-when" id="energyWhen">Right now</span>
           <span class="energy-hint"><span class="dot"></span>Hover / drag the curve</span>
         </div>
-        <div class="seg-toggle" id="modeToggle">
-          <button data-m="line" class="on">LINE</button>
-          <button data-m="stack">STACK</button>
-        </div>
       </div>
 
       <div class="energy-desc">Your caffeine level, hour by hour — rises with every drink and fades on its own half-life.</div>
@@ -424,6 +417,10 @@ body::after {
         <button class="day-nav-btn" id="dayPrevBtn" type="button" aria-label="Previous day">‹</button>
         <span class="day-nav-label" id="dayNavLabel">Today</span>
         <button class="day-nav-btn" id="dayNextBtn" type="button" aria-label="Next day" disabled>›</button>
+        <div class="seg-toggle" id="modeToggle">
+          <button data-m="line" class="on">LINE</button>
+          <button data-m="stack">STACK</button>
+        </div>
       </div>
 
       <div class="curve-wrap" id="curveWrap">
