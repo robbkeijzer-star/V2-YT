@@ -824,6 +824,8 @@ body::after {
     const yMax=caffeineYMax(pts);
     const X=(t)=> (t/spanH)*W;
     const Y=(v)=> H-padB-(v/yMax)*(H-padB-padT);
+    const renderedW=svg.clientWidth||W;
+    const stretchX=renderedW>0 ? renderedW/W : 1; // viewBox is stretched non-uniformly (preserveAspectRatio="none"); markers must counter-scale horizontally to avoid distortion
     renderAxis();
     let parts=[];
     // night shading (asleep regions)
@@ -879,6 +881,26 @@ body::after {
       parts.push('<line x1="'+xs+'" y1="0" x2="'+xs+'" y2="'+H+'" stroke="rgba(107,227,164,0.7)" stroke-width="1.5" stroke-dasharray="3 3"/>');
       parts.push('<circle cx="'+xs+'" cy="'+ys+'" r="6" fill="#0e0e10" stroke="#6BE3A4" stroke-width="2.5"/>');
     }
+    // log markers — icon + time at the point each drink was logged
+    const dayStart=viewMidnight(), dayEnd=dayStart+86400000;
+    const dayLogs=logs.filter(l=>l.ts>=dayStart && l.ts<dayEnd).sort((a,b)=>a.ts-b.ts);
+    dayLogs.forEach(l=>{
+      const t=(l.ts-dayStart)/3600000;
+      if(t<0 || t>spanH) return;
+      const mx=X(t), my=Y(caffeineAt(t));
+      // draw in local (true-pixel) space inside a <g>, then counter-scale horizontally so the
+      // chart's non-uniform stretch (preserveAspectRatio="none") doesn't distort the icon/text
+      let inner='', iconTop;
+      if(l.img){
+        iconTop=-26;
+        inner+='<image href="'+l.img+'" x="-10" y="'+iconTop+'" width="20" height="20" preserveAspectRatio="xMidYMid meet" style="filter:drop-shadow(0 0 3px #00CFFF)"/>';
+      } else {
+        iconTop=-24;
+        inner+='<text x="0" y="-10" text-anchor="middle" font-size="15">'+(l.e||'☕')+'</text>';
+      }
+      inner+='<text x="0" y="'+(iconTop-4)+'" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" font-weight="700" fill="#00CFFF">'+fmtTime(l.ts)+'</text>';
+      parts.push('<g transform="translate('+mx.toFixed(1)+' '+my.toFixed(1)+') scale('+(1/stretchX).toFixed(4)+' 1)">'+inner+'</g>');
+    });
     svg.innerHTML=parts.join('');
   }
 
