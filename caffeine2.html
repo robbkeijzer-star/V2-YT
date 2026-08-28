@@ -544,7 +544,7 @@ body::after {
 
   <!-- TODAY'S LOG -->
   <div class="section">
-    <div class="section-title">Logged Today</div>
+    <div class="section-title" id="loggedTitle">Logged Today</div>
     <div class="gm-card">
       <ul class="log-list" id="logList"></ul>
     </div>
@@ -607,6 +607,7 @@ body::after {
   const DB = [
     {n:'Red Bull (12 oz)',mg:114,c:'Energy',e:'⚡'},{n:'Monster Ultra (16 oz)',mg:150,c:'Energy',e:'⚡',img:'magic_edit-1.png'},
     {n:'Monster White (16 oz)',mg:160,c:'Energy',e:'⚡'},
+    {n:'Cola Zero (300 ml)',mg:20,c:'Soda',e:'🥤',img:'magic_edit-cola-zero-3.png',glow:'#FF3B3B'},
     {n:'Brewed coffee (8 oz)',mg:95,c:'Coffee',e:'☕'},{n:'Brewed coffee (12 oz)',mg:140,c:'Coffee',e:'☕'},
     {n:'Brewed coffee (16 oz)',mg:190,c:'Coffee',e:'☕'},{n:'Cold brew (16 oz)',mg:205,c:'Coffee',e:'🧊'},
     {n:'Decaf coffee (8 oz)',mg:3,c:'Coffee',e:'☕'},{n:'Dunkin medium coffee',mg:210,c:'Coffee',e:'☕'},
@@ -759,6 +760,7 @@ body::after {
   let scrubT = null; // hovered hour, or null
 
   function todaysLogs(){ const s=startOfToday(); return logs.filter(l=>l.ts>=s); }
+  function viewDayLogs(){ const s=viewMidnight(), e=s+86400000; return logs.filter(l=>l.ts>=s && l.ts<e); }
   function dailyTotal(){ return Math.round(todaysLogs().reduce((a,l)=>a+l.mg,0)); }
 
   /* ---- Caffeine-level curve (intake + decay), used by the ring + hero chart ---- */
@@ -893,7 +895,7 @@ body::after {
       let inner='', iconTop;
       if(l.img){
         iconTop=-26;
-        inner+='<image href="'+l.img+'" x="-10" y="'+iconTop+'" width="20" height="20" preserveAspectRatio="xMidYMid meet" style="filter:drop-shadow(0 0 3px #00CFFF)"/>';
+        inner+='<image href="'+l.img+'" x="-10" y="'+iconTop+'" width="20" height="20" preserveAspectRatio="xMidYMid meet" style="filter:drop-shadow(0 0 3px '+(l.glow||'#00CFFF')+')"/>';
       } else {
         iconTop=-24;
         inner+='<text x="0" y="-10" text-anchor="middle" font-size="15">'+(l.e||'☕')+'</text>';
@@ -971,10 +973,20 @@ body::after {
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function iconHtml(item){ return item && item.img ? '<img src="'+item.img+'" alt="">' : (item && item.e ? item.e : '☕'); }
+  function iconHtml(item){
+    if(!item || !item.img) return (item && item.e) ? item.e : '☕';
+    const glow = item.glow ? ' style="filter:drop-shadow(0 0 4px '+item.glow+')"' : '';
+    return '<img src="'+item.img+'" alt=""'+glow+'>';
+  }
   function renderLog(){
-    const list=$('logList'); const tl=todaysLogs().slice().sort((a,b)=>b.ts-a.ts); list.innerHTML='';
-    if(tl.length===0){ const li=document.createElement('li'); li.className='empty-state'; li.textContent='No drinks logged today — search one above to start tracking.'; list.appendChild(li); return; }
+    const dayLabel=fmtDayNavLabel();
+    $('loggedTitle').textContent = 'Logged '+dayLabel;
+    const list=$('logList'); const tl=viewDayLogs().slice().sort((a,b)=>b.ts-a.ts); list.innerHTML='';
+    if(tl.length===0){
+      const li=document.createElement('li'); li.className='empty-state';
+      li.textContent = viewDayOffset===0 ? 'No drinks logged today — search one above to start tracking.' : 'No drinks logged on this day.';
+      list.appendChild(li); return;
+    }
     tl.forEach(l=>{
       const li=document.createElement('li'); li.className='log-row';
       li.innerHTML='<div class="log-emoji">'+iconHtml(l)+'</div>'
@@ -1043,7 +1055,7 @@ body::after {
     viewDayOffset = offset;
     scrubT = null;
     renderDayNav();
-    renderRing(); renderChart(); renderPlan();
+    renderRing(); renderChart(); renderPlan(); renderLog();
   }
   function goDay(delta){ goToOffset(viewDayOffset+delta); }
 
@@ -1211,13 +1223,13 @@ body::after {
   /* ============ Logging / search / custom ============ */
   function logDrink(item){
     const ts = retroTs!=null ? retroTs : Date.now();
-    logs.push({id:uid('c'), n:item.n, mg:Math.round(item.mg), e:item.e||'☕', img:item.img||null, ts});
+    logs.push({id:uid('c'), n:item.n, mg:Math.round(item.mg), e:item.e||'☕', img:item.img||null, glow:item.glow||null, ts});
     saveJSON(LOGS_KEY,logs); renderAll();
     if(retroTs!=null) showToast('Logged '+item.n+' for '+new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' at '+fmtClock(new Date(ts).getHours()+new Date(ts).getMinutes()/60));
   }
   function duplicateLog(entry){
     const ts = entry.ts + 60000;
-    logs.push({id:uid('c'), n:entry.n, mg:entry.mg, e:entry.e, img:entry.img||null, ts});
+    logs.push({id:uid('c'), n:entry.n, mg:entry.mg, e:entry.e, img:entry.img||null, glow:entry.glow||null, ts});
     saveJSON(LOGS_KEY,logs); renderAll();
     showToast('Duplicated '+entry.n);
   }
