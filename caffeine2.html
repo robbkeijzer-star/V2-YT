@@ -938,6 +938,7 @@ body::after {
     // log markers — icon + time at the point each drink was logged
     const dayStart=viewMidnight(), dayEnd=dayStart+86400000;
     const dayLogs=logs.filter(l=>l.ts>=dayStart && l.ts<dayEnd).sort((a,b)=>a.ts-b.ts);
+    let glowDefs='', glowCounter=0;
     dayLogs.forEach(l=>{
       const t=(l.ts-dayStart)/3600000;
       if(t<0 || t>spanH) return;
@@ -947,7 +948,11 @@ body::after {
       let inner='', iconTop;
       if(l.img){
         iconTop=-26;
-        inner+='<image href="'+l.img+'" x="-10" y="'+iconTop+'" width="20" height="20" preserveAspectRatio="xMidYMid meet" style="filter:drop-shadow(0 0 3px '+(l.glow||'#00CFFF')+')"/>';
+        const glowColor=l.glow||'#00CFFF';
+        const gid='mkGlow'+(glowCounter++);
+        glowDefs+='<radialGradient id="'+gid+'" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="'+glowColor+'" stop-opacity="0.6"/><stop offset="100%" stop-color="'+glowColor+'" stop-opacity="0"/></radialGradient>';
+        inner+='<circle cx="0" cy="'+(iconTop+10)+'" r="15" fill="url(#'+gid+')"/>';
+        inner+='<image href="'+l.img+'" x="-10" y="'+iconTop+'" width="20" height="20" preserveAspectRatio="xMidYMid meet"/>';
       } else {
         iconTop=-24;
         inner+='<text x="0" y="-10" text-anchor="middle" font-size="15">'+(l.e||'☕')+'</text>';
@@ -955,6 +960,7 @@ body::after {
       inner+='<text x="0" y="'+(iconTop-4)+'" text-anchor="middle" font-family="ui-monospace,monospace" font-size="8" font-weight="700" fill="#00CFFF">'+fmtTime(l.ts)+'</text>';
       parts.push('<g transform="translate('+mx.toFixed(1)+' '+my.toFixed(1)+') scale('+(1/stretchX).toFixed(4)+' 1)">'+inner+'</g>');
     });
+    if(glowDefs) parts.push('<defs>'+glowDefs+'</defs>');
     svg.innerHTML=parts.join('');
   }
 
