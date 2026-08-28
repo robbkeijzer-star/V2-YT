@@ -142,12 +142,6 @@ body::after {
 .menu-link:active { background: rgba(255,255,255,0.06); }
 .menu-link.active { color: var(--text-primary); background: rgba(201,163,107,0.14); }
 .menu-link-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
-.menu-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 14px 0; }
-.menu-section-title { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 10px; padding: 0 10px; }
-.menu-sleep-row { display: flex; gap: 8px; padding: 0 10px; }
-.menu-sleep-field { flex: 1; min-width: 0; }
-.menu-sleep-field .field-label { margin-bottom: 6px; }
-.menu-sleep-note { font-size: 11px; color: var(--text-tertiary); padding: 10px 10px 0; line-height: 1.5; }
 
 .section { margin-top: 8px; }
 .section-title {
@@ -180,21 +174,13 @@ body::after {
 .energy-hint .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--energy); }
 .energy-desc { margin-top: 12px; font-size: 13px; color: var(--text-tertiary); line-height: 1.5; }
 
-.seg-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.25); flex-shrink: 0; }
+.seg-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.25); flex-shrink: 0; margin-left: auto; }
 .seg-toggle button {
   border: 0; background: transparent; color: var(--text-tertiary);
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.10em;
   padding: 8px 14px; cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .seg-toggle button.on { background: rgba(107,227,164,0.15); color: var(--energy); }
-.seg-toggle-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
-.sleep-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.sleep-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
-.sleep-toggle-switch { position: relative; width: 30px; height: 17px; border-radius: 999px; background: rgba(255,255,255,0.12); transition: background 0.2s; flex-shrink: 0; }
-.sleep-toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
-.sleep-toggle input:checked + .sleep-toggle-switch { background: rgba(125,211,252,0.55); }
-.sleep-toggle input:checked + .sleep-toggle-switch::after { transform: translateX(13px); }
-.sleep-toggle-text { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--text-tertiary); text-transform: uppercase; }
 
 .day-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px; }
 .day-nav-btn { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.10);
@@ -339,9 +325,6 @@ body::after {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
   .gm-card { padding: 16px; }
   .curve-wrap svg { height: 200px; }
-  .ring { order: 1; }
-  .seg-toggle-wrap { order: 2; margin-left: auto; }
-  .energy-label { order: 3; flex-basis: 100%; }
 }
 </style>
 </head>
@@ -387,17 +370,9 @@ body::after {
           <span class="energy-when" id="energyWhen">Right now</span>
           <span class="energy-hint"><span class="dot"></span>Hover / drag the curve</span>
         </div>
-        <div class="seg-toggle-wrap">
-          <div class="seg-toggle" id="modeToggle">
-            <button data-m="line" class="on">LINE</button>
-            <button data-m="bars">BARS</button>
-            <button data-m="stack">STACK</button>
-          </div>
-          <label class="sleep-toggle">
-            <input type="checkbox" id="sleepShadeToggle">
-            <span class="sleep-toggle-switch"></span>
-            <span class="sleep-toggle-text">Shade sleep</span>
-          </label>
+        <div class="seg-toggle" id="modeToggle">
+          <button data-m="line" class="on">LINE</button>
+          <button data-m="stack">STACK</button>
         </div>
       </div>
 
@@ -517,20 +492,6 @@ body::after {
     <a class="menu-link" href="po-water.html"><span class="menu-link-icon">💧</span>Water</a>
     <a class="menu-link active" href="caffeine2.html"><span class="menu-link-icon">☕</span>Caffeine</a>
     <a class="menu-link" href="poop2.html"><span class="menu-link-icon">📸</span>Poop</a>
-
-    <div class="menu-divider"></div>
-    <div class="menu-section-title">Sleep Schedule</div>
-    <div class="menu-sleep-row">
-      <div class="menu-sleep-field">
-        <label class="field-label">Wake up</label>
-        <input class="gm-input" id="wakeInput" type="time">
-      </div>
-      <div class="menu-sleep-field">
-        <label class="field-label">Bedtime</label>
-        <input class="gm-input" id="bedInput" type="time">
-      </div>
-    </div>
-    <div class="menu-sleep-note" id="sleepNote">Only shades your sleep window on the energy chart (toggle under the chart mode switch) — it doesn't change your predictions.</div>
   </div>
 </div>
 
@@ -588,7 +549,7 @@ body::after {
   ];
 
   /* ============ Storage ============ */
-  const LOGS_KEY='caf:logs', CUSTOM_KEY='caf:custom', SLEEP_KEY='caf:sleep', SHADE_KEY='caf:shadeSleep';
+  const LOGS_KEY='caf:logs', CUSTOM_KEY='caf:custom';
   function loadJSON(k,f){ try { return JSON.parse(localStorage.getItem(k)) || f; } catch(e){ return f; } }
   function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
   function uid(prefix){ return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -598,35 +559,6 @@ body::after {
   /* ============ Personal data ============ */
   let bodyKg = null, recovery = null;
   let wakeHour = 7, bedHour = 23;   // defaults; overridden by WHOOP
-  // sleepPrefs is a display-only preference (chart shading), it never feeds the energy model.
-  let sleepPrefs = loadJSON(SLEEP_KEY, null);
-  let shadeSleep = localStorage.getItem(SHADE_KEY) === '1';
-  function hourFromTimeStr(s){ const p=(s||'').split(':'); const h=parseInt(p[0],10), m=parseInt(p[1],10); return (isNaN(h)?0:h)+(isNaN(m)?0:m)/60; }
-  function timeStrFromHour(h){ h=((h%24)+24)%24; const hh=Math.floor(h); const mm=Math.round((h-hh)*60); return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
-  function sleepWindow(){
-    return sleepPrefs
-      ? { bed: hourFromTimeStr(sleepPrefs.bed), wake: hourFromTimeStr(sleepPrefs.wake) }
-      : { bed: 22, wake: 7 };
-  }
-  function inSleepWindow(t, bed, wake){ return bed<=wake ? (t>=bed && t<wake) : (t>=bed || t<wake); }
-  function populateSleepInputs(){
-    const sw = sleepWindow();
-    $('wakeInput').value = timeStrFromHour(sw.wake);
-    $('bedInput').value = timeStrFromHour(sw.bed);
-    $('sleepShadeToggle').checked = shadeSleep;
-  }
-  function onSleepChange(){
-    const wv=$('wakeInput').value, bv=$('bedInput').value;
-    if(!wv || !bv) return;
-    sleepPrefs = { wake: wv, bed: bv };
-    saveJSON(SLEEP_KEY, sleepPrefs);
-    renderAll();
-  }
-  function toggleShadeSleep(on){
-    shadeSleep = on;
-    localStorage.setItem(SHADE_KEY, on ? '1' : '0');
-    renderChart();
-  }
   function readProfile() {
     const w = loadJSON('po_water_v1', null);
     if (w && w.profile && w.profile.weightKg) {
@@ -790,17 +722,6 @@ body::after {
     $('energyWhen').textContent = label;
   }
 
-  function splitBySleep(ptsArr, bed, wake){
-    const segs=[]; let cur=null;
-    ptsArr.forEach(p=>{
-      const asleep = inSleepWindow(p[0], bed, wake);
-      if(!cur || cur.asleep!==asleep){ if(cur) segs.push(cur); cur={asleep, pts:[]}; }
-      cur.pts.push(p);
-    });
-    if(cur) segs.push(cur);
-    for(let i=1;i<segs.length;i++) segs[i].pts.unshift(segs[i-1].pts[segs[i-1].pts.length-1]);
-    return segs;
-  }
   function pathFromPts(ptsArr, X, Y){
     let d='M '+X(ptsArr[0][0]).toFixed(1)+' '+Y(ptsArr[0][1]).toFixed(1);
     ptsArr.forEach((p,i)=>{ if(i) d+=' L '+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1); });
@@ -814,7 +735,6 @@ body::after {
     const yMax=caffeineYMax(pts);
     const X=(t)=> (t/24)*W;
     const Y=(v)=> H-padB-(v/yMax)*(H-padB-padT);
-    const sw = shadeSleep ? sleepWindow() : null;
     let parts=[];
     // night shading (asleep regions)
     const nightFill='rgba(255,255,255,0.025)';
@@ -830,14 +750,7 @@ body::after {
 
     parts.push('<defs><linearGradient id="eg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(107,227,164,0.42)"/><stop offset="100%" stop-color="rgba(107,227,164,0)"/></linearGradient></defs>');
 
-    if(chartMode==='bars'){
-      for(let hh=0;hh<24;hh++){
-        const v=caffeineAt(hh+0.5); const x=X(hh+0.12), w=X(0.76); const y=Y(v), h=H-padB-y;
-        const asleep = sw && inSleepWindow(hh+0.5, sw.bed, sw.wake);
-        const color = asleep ? '#6E6E73' : caffeineColor(v);
-        parts.push('<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="2" fill="'+color+'" opacity="0.85"/>');
-      }
-    } else if(chartMode==='stack'){
+    if(chartMode==='stack'){
       // per-drink stacked decay bands — shows which dose is contributing what, and when each wears off
       const palette=['#6BE3A4','#7DD3FC','#F2C063','#C9A3FF','#FF8A8A','#E7C690'];
       const doses=contributingDoses(pts);
@@ -853,38 +766,13 @@ body::after {
         parts.push('<path d="'+d+'" fill="'+palette[i%palette.length]+'" opacity="0.5"/>');
         cum=upper;
       });
-      if(sw){
-        splitBySleep(pts, sw.bed, sw.wake).forEach(seg=>{
-          const d=pathFromPts(seg.pts,X,Y);
-          const stroke = seg.asleep ? '#6E6E73' : '#6BE3A4';
-          parts.push('<path d="'+d+'" fill="none" stroke="'+stroke+'" stroke-width="2.5" stroke-linejoin="round"/>');
-        });
-      } else {
-        parts.push('<path d="'+pathFromPts(pts,X,Y)+'" fill="none" stroke="#6BE3A4" stroke-width="2.5" stroke-linejoin="round"/>');
-      }
+      parts.push('<path d="'+pathFromPts(pts,X,Y)+'" fill="none" stroke="#6BE3A4" stroke-width="2.5" stroke-linejoin="round"/>');
     } else {
       // LINE (default) — smooth glowing curve + area
       const line=pathFromPts(pts,X,Y);
       const area=line+' L '+W+' '+(H-padB)+' L 0 '+(H-padB)+' Z';
       parts.push('<path d="'+area+'" fill="url(#eg)"/>');
-      if(sw){
-        splitBySleep(pts, sw.bed, sw.wake).forEach(seg=>{
-          const d=pathFromPts(seg.pts,X,Y);
-          if(seg.asleep) parts.push('<path d="'+d+'" fill="none" stroke="#6E6E73" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>');
-          else parts.push('<path d="'+d+'" fill="none" stroke="#6BE3A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(107,227,164,0.55))"/>');
-        });
-      } else {
-        parts.push('<path d="'+line+'" fill="none" stroke="#6BE3A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(107,227,164,0.55))"/>');
-      }
-    }
-
-    // sleep window boundary markers
-    if(sw){
-      [sw.bed, sw.wake].forEach(t=>{
-        const x=X(t).toFixed(1);
-        parts.push('<line x1="'+x+'" y1="0" x2="'+x+'" y2="'+H+'" stroke="rgba(210,210,215,0.5)" stroke-width="1.5" stroke-dasharray="2 4"/>');
-        parts.push('<circle cx="'+x+'" cy="'+H+'" r="2.5" fill="rgba(210,210,215,0.8)"/>');
-      });
+      parts.push('<path d="'+line+'" fill="none" stroke="#6BE3A4" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(107,227,164,0.55))"/>');
     }
 
     // markers: now (today only) + scrub
@@ -1198,17 +1086,13 @@ body::after {
   $('editSave').addEventListener('click',saveEdit);
   $('editDelete').addEventListener('click',deleteEdit);
   $('editBg').addEventListener('click',(e)=>{ if(e.target.id==='editBg') closeEdit(); });
-  $('menuBtn').addEventListener('click',()=>{ populateSleepInputs(); $('menuOverlay').classList.add('show'); });
+  $('menuBtn').addEventListener('click',()=>$('menuOverlay').classList.add('show'));
   $('menuClose').addEventListener('click',()=>$('menuOverlay').classList.remove('show'));
   $('menuOverlay').addEventListener('click',(e)=>{ if(e.target.id==='menuOverlay') $('menuOverlay').classList.remove('show'); });
-  $('wakeInput').addEventListener('change',onSleepChange);
-  $('bedInput').addEventListener('change',onSleepChange);
-  $('sleepShadeToggle').addEventListener('change',(e)=>toggleShadeSleep(e.target.checked));
   $('dayPrevBtn').addEventListener('click',()=>goDay(-1));
   $('dayNextBtn').addEventListener('click',()=>goDay(1));
 
   readProfile();
-  populateSleepInputs();
   renderResults('');
   renderAll();
   loadWhoop();
@@ -1272,15 +1156,14 @@ body::after {
     if (typeof initCloudSync !== 'function') return;
     initCloudSync({
       appKey:'caffeine',
-      syncedKeys:[LOGS_KEY,CUSTOM_KEY,SLEEP_KEY],
+      syncedKeys:[LOGS_KEY,CUSTOM_KEY],
       merge:function(key, localVal, remoteVal){
         if(key===LOGS_KEY || key===CUSTOM_KEY) return mergeByKey(localVal, remoteVal);
         return undefined;
       },
       onApplied:function(){
         logs=loadJSON(LOGS_KEY,[]); custom=loadJSON(CUSTOM_KEY,[]);
-        sleepPrefs=loadJSON(SLEEP_KEY,null);
-        populateSleepInputs(); renderResults($('search').value); renderAll();
+        renderResults($('search').value); renderAll();
       }
     });
   });
