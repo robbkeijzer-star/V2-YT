@@ -608,9 +608,7 @@ body::after {
     {n:'Red Bull Light (250 ml)',mg:80,c:'Energy',e:'⚡',img:'red-bull-1.png'},{n:'Monster Ultra (16 oz)',mg:150,c:'Energy',e:'⚡',img:'magic_edit-1.png'},
     {n:'Monster White (16 oz)',mg:160,c:'Energy',e:'⚡'},
     {n:'Cola Zero (300 ml)',mg:20,c:'Soda',e:'🥤',img:'magic_edit-cola-zero-3.png',glow:'#FF3B3B'},
-    {n:'Brewed coffee (8 oz)',mg:95,c:'Coffee',e:'☕'},{n:'Brewed coffee (12 oz)',mg:140,c:'Coffee',e:'☕'},
-    {n:'Brewed coffee (16 oz)',mg:190,c:'Coffee',e:'☕'},{n:'Cold brew (16 oz)',mg:205,c:'Coffee',e:'🧊'},
-    {n:'Decaf coffee (8 oz)',mg:3,c:'Coffee',e:'☕'},{n:'Dunkin medium coffee',mg:210,c:'Coffee',e:'☕'},
+    {n:'Brewed coffee (12 oz)',mg:140,c:'Coffee',e:'☕'},
     {n:'Espresso (1 shot)',mg:64,c:'Espresso',e:'☕'},{n:'Latte (1 shot)',mg:64,c:'Espresso',e:'☕'},
     {n:'Cappuccino (1 shot)',mg:64,c:'Espresso',e:'☕'},{n:'Macchiato (1 shot)',mg:64,c:'Espresso',e:'☕'},
     {n:'Double espresso (2 shots)',mg:128,c:'Espresso',e:'☕'},{n:'Latte, large (2 shots)',mg:128,c:'Espresso',e:'☕'},
@@ -973,9 +971,9 @@ body::after {
   }
 
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function iconHtml(item){
+  function iconHtml(item, withGlow){
     if(!item || !item.img) return (item && item.e) ? item.e : '☕';
-    const glow = item.glow ? ' style="filter:drop-shadow(0 0 4px '+item.glow+')"' : '';
+    const glow = (withGlow!==false && item.glow) ? ' style="filter:drop-shadow(0 0 4px '+item.glow+')"' : '';
     return '<img src="'+item.img+'" alt=""'+glow+'>';
   }
   function renderLog(){
@@ -989,7 +987,7 @@ body::after {
     }
     tl.forEach(l=>{
       const li=document.createElement('li'); li.className='log-row';
-      li.innerHTML='<div class="log-emoji">'+iconHtml(l)+'</div>'
+      li.innerHTML='<div class="log-emoji">'+iconHtml(l, false)+'</div>'
         +'<div class="log-main"><span class="log-name">'+escapeHtml(l.n)+'<b>'+l.mg+' mg</b></span><span class="log-time">'+fmtTime(l.ts)+'</span></div>'
         +'<button class="log-edit" type="button" aria-label="Edit">i</button>'
         +'<button class="log-dup" type="button" aria-label="Duplicate">⧉</button>'
@@ -1249,17 +1247,17 @@ body::after {
       items=items.filter(d=>d.n.toLowerCase().includes(query)||d.c.toLowerCase().includes(query));
       items=items.slice(0,40);
     } else {
-      const recentKeys=recentDrinkKeys(4);
-      const recentSet=new Set(recentKeys);
-      const byKey=new Map(items.map(d=>[d.n+'|'+d.mg, d]));
-      const recent=recentKeys.map(k=>byKey.get(k)).filter(Boolean);
-      const rest=items.filter(d=>!recentSet.has(d.n+'|'+d.mg));
-      items=recent.concat(rest).slice(0,12);
+      const rank=new Map(recentDrinkKeys(items.length).map((k,i)=>[k,i]));
+      items=items.slice().sort((a,b)=>{
+        const ra=rank.has(a.n+'|'+a.mg) ? rank.get(a.n+'|'+a.mg) : Infinity;
+        const rb=rank.has(b.n+'|'+b.mg) ? rank.get(b.n+'|'+b.mg) : Infinity;
+        return ra-rb;
+      }).slice(0,12);
     }
     el.innerHTML='';
     if(items.length===0){ const li=document.createElement('li'); li.className='results-empty'; li.textContent='No match — add it as a custom drink below.'; el.appendChild(li); return; }
     items.forEach(d=>{ const li=document.createElement('li'); li.className='result';
-      li.innerHTML='<span class="result-emoji">'+iconHtml(d)+'</span><span class="result-name">'+escapeHtml(d.n)+' <span class="result-cat">· '+d.c+'</span></span><span class="result-mg">'+d.mg+'<small> mg</small></span>';
+      li.innerHTML='<span class="result-emoji">'+iconHtml(d, false)+'</span><span class="result-name">'+escapeHtml(d.n)+' <span class="result-cat">· '+d.c+'</span></span><span class="result-mg">'+d.mg+'<small> mg</small></span>';
       li.addEventListener('click',()=>{ logDrink(d); $('search').value=''; renderResults(''); }); el.appendChild(li); });
   }
   function addCustom(){
