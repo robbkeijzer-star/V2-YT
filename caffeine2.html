@@ -150,9 +150,6 @@ body::after {
 }
 .section-title::before { content: ''; width: 18px; height: 1px; background: var(--text-tertiary); opacity: 0.6; }
 .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent); }
-.section-toggle { background: none; border: 0; padding: 0; width: 100%; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
-.section-toggle-arrow { font-size: 9px; color: var(--text-tertiary); transition: transform 0.15s; }
-.section-toggle[aria-expanded="true"] .section-toggle-arrow { transform: rotate(90deg); }
 .cal-week-total { margin-left: auto; font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
   text-transform: none; color: var(--caf); }
 
@@ -456,8 +453,8 @@ body::after {
 
   <!-- DATA / MONTH CALENDAR -->
   <div class="section">
-    <button class="section-title section-toggle" id="calToggle" type="button" aria-expanded="false">Data<span class="cal-week-total" id="calWeekTotal">0 mg this week</span><span class="section-toggle-arrow" id="calToggleArrow">▸</span></button>
-    <div class="gm-card" id="calCard" style="display:none;">
+    <div class="section-title">Data<span class="cal-week-total" id="calWeekTotal">0 mg this week</span></div>
+    <div class="gm-card" id="calCard">
       <div class="cal-nav">
         <button class="cal-nav-btn" id="calPrevBtn" type="button" aria-label="Previous month">‹</button>
         <div class="cal-title" id="calTitle">This Month</div>
@@ -1027,13 +1024,6 @@ body::after {
 
   /* ============ Data / month calendar ============ */
   let calMonthDate = new Date(); calMonthDate.setDate(1); calMonthDate.setHours(0,0,0,0);
-  let calOpen = false;
-  function toggleCal(){
-    calOpen = !calOpen;
-    $('calCard').style.display = calOpen ? 'block' : 'none';
-    $('calToggle').setAttribute('aria-expanded', String(calOpen));
-    $('calToggleArrow').textContent = calOpen ? '▾' : '▸';
-  }
   function isSameMonth(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth(); }
   function calDailyTotals(){
     const map=new Map();
@@ -1278,7 +1268,6 @@ body::after {
   $('dayNextBtn').addEventListener('click',()=>goDay(1));
   $('calPrevBtn').addEventListener('click',calPrevMonth);
   $('calNextBtn').addEventListener('click',calNextMonth);
-  $('calToggle').addEventListener('click',toggleCal);
   $('extendToggle').addEventListener('click',toggleExtend);
 
   readProfile();
