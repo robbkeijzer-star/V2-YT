@@ -178,7 +178,7 @@ body::after {
 .energy-when { font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-tertiary); margin: 3px 0 5px; }
 .energy-hint { font-size: 11px; color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 6px; }
 .energy-hint .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--energy); }
-.energy-desc { flex: 1; min-width: 160px; font-size: 13px; color: var(--text-tertiary); line-height: 1.5; }
+.energy-desc { margin-top: 12px; font-size: 13px; color: var(--text-tertiary); line-height: 1.5; }
 
 .seg-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,0.25); flex-shrink: 0; }
 .seg-toggle button {
@@ -196,6 +196,15 @@ body::after {
 .sleep-toggle input:checked + .sleep-toggle-switch::after { transform: translateX(13px); }
 .sleep-toggle-text { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--text-tertiary); text-transform: uppercase; }
 
+.day-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 14px; }
+.day-nav-btn { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04); color: var(--text-secondary); font-size: 15px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; transition: background 0.15s, color 0.15s; }
+.day-nav-btn:hover { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+.day-nav-btn:disabled { opacity: 0.25; cursor: default; }
+.day-nav-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--text-primary); min-width: 84px; text-align: center; }
 .curve-wrap { position: relative; width: 100%; margin-top: 14px; touch-action: pan-y; }
 .curve-wrap svg { width: 100%; height: 230px; display: block; overflow: visible; }
 .axis { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
@@ -330,7 +339,9 @@ body::after {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
   .gm-card { padding: 16px; }
   .curve-wrap svg { height: 200px; }
-  .energy-desc { display: none; }
+  .ring { order: 1; }
+  .seg-toggle-wrap { order: 2; margin-left: auto; }
+  .energy-label { order: 3; flex-basis: 100%; }
 }
 </style>
 </head>
@@ -376,7 +387,6 @@ body::after {
           <span class="energy-when" id="energyWhen">Right now</span>
           <span class="energy-hint"><span class="dot"></span>Hover / drag the curve</span>
         </div>
-        <div class="energy-desc">Your caffeine level, hour by hour — rises with every drink and fades on its own half-life.</div>
         <div class="seg-toggle-wrap">
           <div class="seg-toggle" id="modeToggle">
             <button data-m="line" class="on">LINE</button>
@@ -389,6 +399,14 @@ body::after {
             <span class="sleep-toggle-text">Shade sleep</span>
           </label>
         </div>
+      </div>
+
+      <div class="energy-desc">Your caffeine level, hour by hour — rises with every drink and fades on its own half-life.</div>
+
+      <div class="day-nav">
+        <button class="day-nav-btn" id="dayPrevBtn" type="button" aria-label="Previous day">‹</button>
+        <span class="day-nav-label" id="dayNavLabel">Today</span>
+        <button class="day-nav-btn" id="dayNextBtn" type="button" aria-label="Next day" disabled>›</button>
       </div>
 
       <div class="curve-wrap" id="curveWrap">
@@ -622,6 +640,14 @@ body::after {
   /* ============ Time helpers ============ */
   function midnight() { const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); }
   function nowHour() { const d=new Date(); return d.getHours()+d.getMinutes()/60; }
+  let viewDayOffset = 0; // 0 = today, negative = N days back — drives the Your Day ring/chart/plan
+  function viewMidnight() { return midnight() + viewDayOffset*86400000; }
+  function hToTsView(h) { return viewMidnight() + h*3600000; }
+  function fmtDayNavLabel() {
+    if (viewDayOffset === 0) return 'Today';
+    if (viewDayOffset === -1) return 'Yesterday';
+    return new Date(viewMidnight()).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
   function startOfToday() { return midnight(); }
   function hToTs(h) { return midnight() + h*3600000; }
   function fmtClock(h) {
@@ -704,7 +730,7 @@ body::after {
     return null;
   }
   function analysis(){
-    const now = nowHour();
+    const now = viewDayOffset===0 ? nowHour() : 24;
     const pts = sampleCaffeine();
     // Today's peak: highest level reached today (for reference/context only).
     let peakT=pts[0][0], peakV=pts[0][1];
@@ -730,7 +756,7 @@ body::after {
   function dailyTotal(){ return Math.round(todaysLogs().reduce((a,l)=>a+l.mg,0)); }
 
   /* ---- Caffeine-level curve (intake + decay), used by the ring + hero chart ---- */
-  function caffeineAt(t){ return totalActiveAt(hToTs(t)); }
+  function caffeineAt(t){ return totalActiveAt(hToTsView(t)); }
   function sampleCaffeine(){ const pts=[]; for(let i=0;i<=144;i++){ const t=i/6; pts.push([t, caffeineAt(t)]); } return pts; }
   function caffeineYMax(pts){
     const maxVal = pts.reduce((m,p)=>Math.max(m,p[1]), 0);
@@ -738,10 +764,18 @@ body::after {
   }
   function caffeineStateWord(mg){ if(mg<=1) return 'None'; if(mg<100) return 'Low'; if(mg<200) return 'Moderate'; return 'High'; }
   function caffeineColor(mg){ if(mg<=1) return 'rgba(255,255,255,0.35)'; if(mg<100) return '#6BE3A4'; if(mg<200) return '#F2C063'; return '#FF8A8A'; }
-  function contributingDoses(pts){ return logs.filter(l => pts.some(([t]) => activeAt(l.mg, l.ts, hToTs(t)) > 1)); }
+  function contributingDoses(pts){ return logs.filter(l => pts.some(([t]) => activeAt(l.mg, l.ts, hToTsView(t)) > 1)); }
 
   function renderRing(){
-    const t = scrubT!=null ? scrubT : nowHour();
+    let t, label;
+    if (scrubT!=null) { t = scrubT; label = 'at ' + fmtClock(t); }
+    else if (viewDayOffset===0) { t = nowHour(); label = 'Right now'; }
+    else {
+      const pts = sampleCaffeine();
+      let peakT=pts[0][0], peakV=pts[0][1];
+      pts.forEach(([tt,vv])=>{ if(vv>peakV){ peakV=vv; peakT=tt; } });
+      t = peakT; label = 'Peak · ' + fmtDayNavLabel();
+    }
     const mg = Math.round(caffeineAt(t));
     const RING_MAX = 300;
     const pct = Math.min(1, mg/RING_MAX);
@@ -753,7 +787,7 @@ body::after {
     $('ringNum').textContent = mg;
     $('energyState').textContent = caffeineStateWord(mg);
     $('energyState').style.color = caffeineColor(mg);
-    $('energyWhen').textContent = scrubT!=null ? ('at ' + fmtClock(t)) : 'Right now';
+    $('energyWhen').textContent = label;
   }
 
   function splitBySleep(ptsArr, bed, wake){
@@ -809,7 +843,7 @@ body::after {
       const doses=contributingDoses(pts);
       let cum=pts.map(()=>0);
       doses.forEach((dose,i)=>{
-        const series=pts.map(([t])=>activeAt(dose.mg, dose.ts, hToTs(t)));
+        const series=pts.map(([t])=>activeAt(dose.mg, dose.ts, hToTsView(t)));
         const lower=cum;
         const upper=cum.map((c,idx)=>c+series[idx]);
         let d='M '+X(pts[0][0]).toFixed(1)+' '+Y(upper[0]).toFixed(1);
@@ -853,10 +887,12 @@ body::after {
       });
     }
 
-    // markers: now + scrub
-    const xNow=X(now).toFixed(1);
-    parts.push('<line x1="'+xNow+'" y1="0" x2="'+xNow+'" y2="'+H+'" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>');
-    parts.push('<circle cx="'+xNow+'" cy="'+Y(caffeineAt(now)).toFixed(1)+'" r="4" fill="#fff"/>');
+    // markers: now (today only) + scrub
+    if(viewDayOffset===0){
+      const xNow=X(now).toFixed(1);
+      parts.push('<line x1="'+xNow+'" y1="0" x2="'+xNow+'" y2="'+H+'" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>');
+      parts.push('<circle cx="'+xNow+'" cy="'+Y(caffeineAt(now)).toFixed(1)+'" r="4" fill="#fff"/>');
+    }
     if(scrubT!=null){
       const xs=X(scrubT).toFixed(1), ys=Y(caffeineAt(scrubT)).toFixed(1);
       parts.push('<line x1="'+xs+'" y1="0" x2="'+xs+'" y2="'+H+'" stroke="rgba(107,227,164,0.7)" stroke-width="1.5" stroke-dasharray="3 3"/>');
@@ -866,9 +902,9 @@ body::after {
   }
 
   function dayLabelForHour(h){
-    const target=new Date(hToTs(h)); target.setHours(0,0,0,0);
-    const today0=new Date(); today0.setHours(0,0,0,0);
-    const diffDays=Math.round((target-today0)/86400000);
+    const target=new Date(hToTsView(h)); target.setHours(0,0,0,0);
+    const viewDay0=new Date(viewMidnight()); viewDay0.setHours(0,0,0,0);
+    const diffDays=Math.round((target-viewDay0)/86400000);
     if(diffDays<=0) return '';
     if(diffDays===1) return ' tomorrow';
     return ' in '+diffDays+' days';
@@ -994,7 +1030,19 @@ body::after {
     $('statAvgSub').textContent = recent.length ? ('Over last '+recent.length+' tracked day'+(recent.length===1?'':'s')) : 'No data yet.';
   }
 
-  function renderAll(){ renderRing(); renderChart(); renderPlan(); renderDaily(); renderLog(); renderStats(); }
+  function renderDayNav(){
+    $('dayNavLabel').textContent = fmtDayNavLabel();
+    $('dayNextBtn').disabled = viewDayOffset>=0;
+  }
+  function goDay(delta){
+    const next = viewDayOffset+delta;
+    if(next>0) return;
+    viewDayOffset = next;
+    scrubT = null;
+    renderDayNav();
+    renderRing(); renderChart(); renderPlan();
+  }
+  function renderAll(){ renderDayNav(); renderRing(); renderChart(); renderPlan(); renderDaily(); renderLog(); renderStats(); }
 
   /* ============ Toast ============ */
   let toastTimer=null;
@@ -1156,6 +1204,8 @@ body::after {
   $('wakeInput').addEventListener('change',onSleepChange);
   $('bedInput').addEventListener('change',onSleepChange);
   $('sleepShadeToggle').addEventListener('change',(e)=>toggleShadeSleep(e.target.checked));
+  $('dayPrevBtn').addEventListener('click',()=>goDay(-1));
+  $('dayNextBtn').addEventListener('click',()=>goDay(1));
 
   readProfile();
   populateSleepInputs();
