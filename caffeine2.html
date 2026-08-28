@@ -628,12 +628,30 @@ body::after {
   ];
 
   /* ============ Storage ============ */
-  const LOGS_KEY='caf:logs', CUSTOM_KEY='caf:custom', DELETED_KEY='caf:deletedLogIds';
+  // caf:logs holds { items:[...], deletedIds:[...] } — deletedIds travels together with
+  // items in one synced key so it can never get pruned/lost independently during a merge
+  // (see: entries resurrecting after cloud sync — the old caf:deletedLogIds side-key
+  // approach was vulnerable to exactly that if any client's payload omitted it).
+  const LOGS_KEY='caf:logs', CUSTOM_KEY='caf:custom', LEGACY_DELETED_KEY='caf:deletedLogIds';
   function loadJSON(k,f){ try { return JSON.parse(localStorage.getItem(k)) || f; } catch(e){ return f; } }
   function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
   function uid(prefix){ return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-  let logs = loadJSON(LOGS_KEY, []);
-  let deletedLogIds = loadJSON(DELETED_KEY, []);
+  function normalizeLogsState(raw){
+    if(Array.isArray(raw)) return { items: raw, deletedIds: [] };
+    if(raw && typeof raw==='object') return { items: Array.isArray(raw.items)?raw.items:[], deletedIds: Array.isArray(raw.deletedIds)?raw.deletedIds:[] };
+    return { items: [], deletedIds: [] };
+  }
+  const initialLogsState = normalizeLogsState(loadJSON(LOGS_KEY, null));
+  let logs = initialLogsState.items;
+  let deletedLogIds = initialLogsState.deletedIds;
+  function saveLogsState(){ saveJSON(LOGS_KEY, { items: logs, deletedIds: deletedLogIds }); }
+  // fold in anything left over from the short-lived separate-key approach, then stop using it
+  const legacyDeleted = loadJSON(LEGACY_DELETED_KEY, []);
+  if(Array.isArray(legacyDeleted) && legacyDeleted.length){
+    let addedLegacy=false;
+    legacyDeleted.forEach(id=>{ if(!deletedLogIds.includes(id)){ deletedLogIds.push(id); addedLegacy=true; } });
+    if(addedLegacy) saveLogsState();
+  }
   function migrateMonsterWhiteToUltra(arr){
     const target = DB.find(d=>d.n==='Monster Ultra (16 oz)');
     if(!target) return false;
@@ -655,12 +673,14 @@ body::after {
   function deleteLog(id){
     if(!deletedLogIds.includes(id)) deletedLogIds.push(id);
     logs = logs.filter(x=>x.id!==id);
-    saveJSON(LOGS_KEY, logs);
-    saveJSON(DELETED_KEY, deletedLogIds);
+    saveLogsState();
     renderAll();
   }
-  if(migrateMonsterWhiteToUltra(logs)) saveJSON(LOGS_KEY, logs);
-  if(sweepDeleted(logs, deletedLogIds)) saveJSON(LOGS_KEY, logs);
+  { let dirty=false;
+    if(migrateMonsterWhiteToUltra(logs)) dirty=true;
+    if(sweepDeleted(logs, deletedLogIds)) dirty=true;
+    if(dirty) saveLogsState();
+  }
   let custom = loadJSON(CUSTOM_KEY, []);
 
   /* ============ Personal data ============ */
@@ -1269,7 +1289,7 @@ body::after {
     const oldDay = dayKey(logs[idx].ts), newTs = d.getTime(), newDay = dayKey(newTs);
     const swapFields = editSwapItem ? { e:editSwapItem.e||'☕', img:editSwapItem.img||null, glow:editSwapItem.glow||null } : {};
     logs[idx] = Object.assign({}, logs[idx], { n:name, mg:mg, ts:newTs }, swapFields);
-    saveJSON(LOGS_KEY, logs);
+    saveLogsState();
     closeEdit();
     renderAll();
     if(oldDay!==newDay) showToast('Updated — moved to '+new Date(newTs).toLocaleDateString(undefined,{month:'short',day:'numeric'}));
@@ -1285,13 +1305,13 @@ body::after {
   function logDrink(item){
     const ts = retroTs!=null ? retroTs : Date.now();
     logs.push({id:uid('c'), n:item.n, mg:Math.round(item.mg), e:item.e||'☕', img:item.img||null, glow:item.glow||null, ts});
-    saveJSON(LOGS_KEY,logs); renderAll();
+    saveLogsState(); renderAll();
     if(retroTs!=null) showToast('Logged '+item.n+' for '+new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' at '+fmtClock(new Date(ts).getHours()+new Date(ts).getMinutes()/60));
   }
   function duplicateLog(entry){
     const ts = entry.ts + 60000;
     logs.push({id:uid('c'), n:entry.n, mg:entry.mg, e:entry.e, img:entry.img||null, glow:entry.glow||null, ts});
-    saveJSON(LOGS_KEY,logs); renderAll();
+    saveLogsState(); renderAll();
     showToast('Duplicated '+entry.n);
   }
   function allDrinks(){ return DB.concat(custom.map(c=>({n:c.n,mg:c.mg,c:'Custom',e:'➕'}))); }
@@ -1435,26 +1455,29 @@ body::after {
     for(const item of remote) map.set(keyOf(item), item);
     return Array.from(map.values());
   }
-  function mergeIds(localArr, remoteArr){
-    const local=Array.isArray(localArr)?localArr:[], remote=Array.isArray(remoteArr)?remoteArr:[];
-    return Array.from(new Set(local.concat(remote)));
+  function mergeLogsState(localVal, remoteVal){
+    const local=normalizeLogsState(localVal), remote=normalizeLogsState(remoteVal);
+    const deletedIds=Array.from(new Set(local.deletedIds.concat(remote.deletedIds)));
+    const items=mergeByKey(local.items, remote.items).filter(item=>!deletedIds.includes(item.id));
+    return { items, deletedIds };
   }
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof initCloudSync !== 'function') return;
     initCloudSync({
       appKey:'caffeine',
-      syncedKeys:[LOGS_KEY,CUSTOM_KEY,DELETED_KEY],
+      syncedKeys:[LOGS_KEY,CUSTOM_KEY],
       merge:function(key, localVal, remoteVal){
-        if(key===LOGS_KEY || key===CUSTOM_KEY) return mergeByKey(localVal, remoteVal);
-        if(key===DELETED_KEY) return mergeIds(localVal, remoteVal);
+        if(key===LOGS_KEY) return mergeLogsState(localVal, remoteVal);
+        if(key===CUSTOM_KEY) return mergeByKey(localVal, remoteVal);
         return undefined;
       },
       onApplied:function(){
-        logs=loadJSON(LOGS_KEY,[]); custom=loadJSON(CUSTOM_KEY,[]); deletedLogIds=loadJSON(DELETED_KEY,[]);
+        const state=normalizeLogsState(loadJSON(LOGS_KEY,null));
+        logs=state.items; deletedLogIds=state.deletedIds; custom=loadJSON(CUSTOM_KEY,[]);
         let dirty=false;
         if(migrateMonsterWhiteToUltra(logs)) dirty=true;
         if(sweepDeleted(logs, deletedLogIds)) dirty=true;
-        if(dirty) saveJSON(LOGS_KEY, logs);
+        if(dirty) saveLogsState();
         renderResults($('search').value); renderAll();
       }
     });
