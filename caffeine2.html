@@ -627,18 +627,19 @@ body::after {
   function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
   function uid(prefix){ return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   let logs = loadJSON(LOGS_KEY, []);
-  (function migrateMonsterWhiteToUltra(){
+  function migrateMonsterWhiteToUltra(arr){
     const target = DB.find(d=>d.n==='Monster Ultra (16 oz)');
-    if(!target) return;
+    if(!target) return false;
     let changed=false;
-    logs.forEach(l=>{
+    arr.forEach(l=>{
       if(l.n==='Monster White (16 oz)'){
         l.n=target.n; l.mg=target.mg; l.e=target.e||'⚡'; l.img=target.img||null; l.glow=target.glow||null;
         changed=true;
       }
     });
-    if(changed) saveJSON(LOGS_KEY, logs);
-  })();
+    return changed;
+  }
+  if(migrateMonsterWhiteToUltra(logs)) saveJSON(LOGS_KEY, logs);
   let custom = loadJSON(CUSTOM_KEY, []);
 
   /* ============ Personal data ============ */
@@ -1388,6 +1389,7 @@ body::after {
       },
       onApplied:function(){
         logs=loadJSON(LOGS_KEY,[]); custom=loadJSON(CUSTOM_KEY,[]);
+        if(migrateMonsterWhiteToUltra(logs)) saveJSON(LOGS_KEY, logs);
         renderResults($('search').value); renderAll();
       }
     });
