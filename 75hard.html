@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>75 Hard · Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+
+<style>
+:root {
+  --text-primary: #FFFFFF;
+  --text-secondary: #C8C8C8;
+  --text-tertiary: #7A7A7A;
+  --accent: #E8342B;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; background: #000000; color: var(--text-secondary);
+  font-family: var(--font); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-height: 100vh; position: relative; overflow-x: hidden;
+  padding: max(28px, env(safe-area-inset-top)) 20px 60px;
+}
+.page { max-width: 1100px; margin: 0 auto; }
+.app-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.app-title-left { display: flex; align-items: center; gap: 10px; }
+.app-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.app-live {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); flex-shrink: 0;
+  padding: 4px 9px; border-radius: 999px; background: rgba(232,52,43,0.14);
+  border: 1px solid rgba(232,52,43,0.4);
+}
+.app-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 8px rgba(232,52,43,0.7); animation: app-live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes app-live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
+
+/* ===== Spade badge (brand mark) ===== */
+.spade-badge { width: 40px; height: 40px; border-radius: 10px; border: 2px solid #fff; background: #000;
+  display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+.spade-badge .spade-glyph { font-size: 26px; line-height: 1; color: #fff; }
+.spade-badge .spade-num { position: absolute; font-size: 10px; font-weight: 800; color: #000; top: 44%; left: 50%; transform: translate(-50%,-50%); }
+
+/* ===== Hamburger menu ===== */
+.menu-btn {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05); color: var(--text-primary); font-size: 16px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+.menu-btn:active { background: rgba(255,255,255,0.1); }
+.menu-overlay {
+  position: fixed; inset: 0; z-index: 200; display: none;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.menu-overlay.show { display: block; }
+.menu-panel {
+  position: absolute; top: 0; left: 0; bottom: 0; width: 78%; max-width: 300px;
+  background: #0a0a0a; border-right: 1px solid rgba(255,255,255,0.12);
+  padding: max(24px, env(safe-area-inset-top)) 16px 24px;
+  box-shadow: 12px 0 40px rgba(0,0,0,0.6);
+  transform: translateX(-100%); transition: transform 0.25s ease;
+  display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+}
+.menu-overlay.show .menu-panel { transform: translateX(0); }
+.menu-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.menu-title { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+.menu-link {
+  display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-radius: 12px;
+  text-decoration: none; color: var(--text-secondary); font-size: 15px; font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+.menu-link:active { background: rgba(255,255,255,0.08); }
+.menu-link.active { color: #fff; background: rgba(232,52,43,0.18); }
+.menu-link-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
+
+.section { margin-top: 8px; }
+.section-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary); display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.section-title::before { content: ''; width: 18px; height: 1px; background: var(--text-tertiary); opacity: 0.6; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.12), transparent); }
+.section-title-btn { margin-left: auto; border: 0; background: transparent; color: var(--text-tertiary); font-family: inherit; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; padding: 0; }
+.section-title-btn:hover { color: var(--accent); }
+
+.gm-card {
+  position: relative; background: #0d0d0d; border-radius: 16px; padding: 20px;
+  margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.55); overflow: hidden;
+}
+
+/* ===== Day hero ===== */
+.day-card-top { display: flex; justify-content: center; margin-bottom: 6px; }
+.day-num-hero { text-align: center; font-size: 52px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; }
+.day-sub { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-top: 6px; }
+.day-complete { text-align: center; font-size: 22px; font-weight: 800; color: #fff; }
+
+/* ===== Checklist ===== */
+.task-list { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; }
+.task-row { display: flex; align-items: center; gap: 14px; padding: 13px 2px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.task-row:first-child { border-top: 0; }
+.task-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; font-weight: 800; color: transparent; }
+.task-row.done .task-check { background: #fff; border-color: #fff; color: #000; }
+.task-check.camera { border-radius: 6px; font-size: 14px; color: var(--text-secondary); }
+.task-row.done .task-check.camera { background: transparent; border-color: rgba(255,255,255,0.35); color: var(--text-secondary); }
+.task-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.task-name { font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.task-row.done .task-name { color: var(--text-tertiary); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.3); }
+.task-sub { font-size: 10.5px; color: var(--text-tertiary); }
+.task-thumb { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
+
+/* ===== Notes ===== */
+.notes-wrap { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
+.notes-label { font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; display: block; }
+.notes-input { width: 100%; min-height: 70px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px;
+  background: #000; color: var(--text-primary); font-family: inherit; font-size: 13.5px; outline: none; resize: vertical; }
+.notes-input::placeholder { color: var(--text-tertiary); }
+.notes-input:focus { border-color: var(--accent); }
+.restart-btn { margin-top: 16px; width: 100%; padding: 12px; border: 1px solid var(--accent); border-radius: 10px;
+  background: transparent; color: var(--accent); font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; }
+.restart-btn:hover { background: rgba(232,52,43,0.1); }
+
+/* ===== Stats ===== */
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; }
+.mini { background: #000; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 14px; }
+.mini .k { font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); }
+.mini .v { font-size: 19px; font-weight: 800; color: var(--text-primary); margin-top: 6px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.mini .s { font-size: 10.5px; color: var(--text-tertiary); margin-top: 4px; line-height: 1.4; }
+.mini .v.accent { color: var(--accent); }
+
+/* ===== Progress grid ===== */
+.progress-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 16px; }
+.progress-tab { flex: 1; border: 0; background: transparent; padding: 0 0 10px; font-family: inherit;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--text-tertiary); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.progress-tab.on { color: #fff; border-bottom-color: var(--accent); }
+.progress-title { text-align: center; font-size: 20px; font-weight: 800; letter-spacing: 0.02em; color: #fff; margin-bottom: 16px; }
+.progress-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.pg-cell { aspect-ratio: 1; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-tertiary);
+  background: rgba(255,255,255,0.05); border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; padding: 0; }
+.pg-cell.future { color: var(--text-tertiary); }
+.pg-cell.done { background: #fff; color: #000; }
+.pg-cell.partial { background: rgba(255,255,255,0.16); color: #fff; }
+.pg-cell.failed { background: var(--accent); color: #fff; }
+.pg-cell.today { box-shadow: 0 0 0 2px var(--accent) inset; }
+.progress-caption { text-align: center; font-size: 10.5px; color: var(--text-tertiary); margin-top: 12px; }
+
+/* ===== History pane ===== */
+.attempt-row { display: flex; align-items: center; gap: 10px; padding: 10px 2px;
+  border-top: 1px solid rgba(255,255,255,0.08); }
+.attempt-row:first-child { border-top: 0; }
+.attempt-icon { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; }
+.attempt-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.attempt-name { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
+.attempt-sub { font-size: 10.5px; color: var(--text-tertiary); }
+.attempt-days { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent); }
+.empty-state { text-align: center; font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 16px 0; }
+
+/* ===== Rules (white sheet, matching the app's daily-rules card) ===== */
+.rules-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.rules-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; }
+.rules-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #000; color: #fff;
+  font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.rules-fail { margin-top: 16px; padding: 12px 14px; border-radius: 10px; background: #000; color: #fff;
+  font-size: 12.5px; font-weight: 600; line-height: 1.5; }
+
+/* ===== Modal ===== */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: none; align-items: flex-end; justify-content: center; z-index: 60; }
+.modal-bg.open { display: flex; }
+.modal { width: 100%; max-width: 460px; background: #0d0d0d; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px 20px 0 0;
+  padding: 20px; box-shadow: 0 -12px 40px rgba(0,0,0,0.6); max-height: 88vh; overflow-y: auto; color: var(--text-secondary); }
+#rulesBg .modal { background: #F4F2EE; color: #111; border-color: transparent; }
+#rulesBg .modal-title { color: #111; }
+#rulesBg .modal-close { color: #666; }
+#rulesBg .rules-list li { color: #222; }
+@media (min-width: 560px) { .modal-bg { align-items: center; } .modal { border-radius: 20px; } }
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.modal-title { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; color: var(--text-primary); }
+.modal-close { border: 0; background: transparent; color: var(--text-tertiary); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px; }
+.modal-close:hover { color: var(--text-primary); }
+.field { margin-bottom: 14px; }
+.field-label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
+.day-detail-photo { width: 100%; border-radius: 12px; margin-bottom: 14px; display: block; }
+
+/* ===== Toast ===== */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+  background: #0d0d0d; border: 1px solid rgba(255,255,255,0.15); color: var(--text-primary);
+  font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 50; max-width: 86vw; text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 480px) {
+  body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
+  .gm-card { padding: 16px; }
+  .day-num-hero { font-size: 42px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="app-title-row">
+    <div class="app-title-left">
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu">☰</button>
+      <h1 class="app-title">DailyTrack__Robin</h1>
+    </div>
+    <span class="app-live"><span class="app-live-dot"></span>75 Hard</span>
+  </div>
+
+  <!-- DAY HERO + CHECKLIST + NOTES -->
+  <div class="section">
+    <div class="section-title">Today<button class="section-title-btn" id="rulesBtn" type="button">Rules</button></div>
+    <div class="gm-card">
+      <div class="day-card-top">
+        <div class="spade-badge"><span class="spade-glyph">♠</span><span class="spade-num">75</span></div>
+      </div>
+      <div class="day-num-hero" id="heroState">DAY —</div>
+      <div class="day-sub" id="heroSub">—</div>
+
+      <ul class="task-list" id="taskList"></ul>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+
+      <div class="notes-wrap">
+        <label class="notes-label">Notes</label>
+        <textarea class="notes-input" id="notesInput" placeholder="Make notes of any challenges, insights, or breakthroughs you achieve."></textarea>
+      </div>
+
+      <button class="restart-btn" id="restartBtn" type="button">Restart challenge from Day 1</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section">
+    <div class="section-title">Stats</div>
+    <div class="gm-card">
+      <div class="tile-grid">
+        <div class="mini"><div class="k">Current day</div><div class="v accent" id="statDay">—</div><div class="s" id="statDaySub"></div></div>
+        <div class="mini"><div class="k">Attempt</div><div class="v" id="statAttempt">—</div><div class="s" id="statAttemptSub"></div></div>
+        <div class="mini"><div class="k">Best run</div><div class="v" id="statBest">—</div><div class="s">Longest streak reached</div></div>
+        <div class="mini"><div class="k">Restarts</div><div class="v" id="statAttempts">—</div><div class="s" id="statAttemptsSub"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS GRID -->
+  <div class="section">
+    <div class="section-title">Progress</div>
+    <div class="gm-card">
+      <div class="progress-tabs">
+        <button class="progress-tab on" id="tabCurrent" type="button">Current Progress</button>
+        <button class="progress-tab" id="tabHistory" type="button">Previous</button>
+      </div>
+      <div id="currentPane">
+        <div class="progress-title">75 HARD</div>
+        <div class="progress-grid" id="progressGrid"></div>
+        <div class="progress-caption">Tap any completed day to view details</div>
+      </div>
+      <div id="historyPane" style="display:none"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="menu-overlay" id="menuOverlay">
+  <div class="menu-panel">
+    <div class="menu-head">
+      <span class="menu-title">Menu</span>
+      <button class="modal-close" id="menuClose" type="button" aria-label="Close">×</button>
+    </div>
+    <a class="menu-link" href="main.html"><span class="menu-link-icon">🏠</span>Main</a>
+    <a class="menu-link" href="health.html"><span class="menu-link-icon">💊</span>Health</a>
+    <a class="menu-link" href="po-water.html"><span class="menu-link-icon">💧</span>Water</a>
+    <a class="menu-link" href="caffeine2.html"><span class="menu-link-icon">☕</span>Caffeine</a>
+    <a class="menu-link" href="poop2.html"><span class="menu-link-icon">📸</span>Poop</a>
+    <a class="menu-link active" href="75hard.html"><span class="menu-link-icon">🔥</span>75 Hard</a>
+  </div>
+</div>
+
+<!-- Rules modal (white sheet, matching the app) -->
+<div class="modal-bg" id="rulesBg">
+  <div class="modal" role="dialog" aria-label="75 Hard rules">
+    <div class="modal-head">
+      <span class="modal-title">DAILY RULES</span>
+      <button class="modal-close" id="rulesClose" type="button" aria-label="Close">×</button>
+    </div>
+    <ul class="rules-list">
+      <li><span class="rules-num">1</span>Two 45-minute workouts — back to back doesn't count.</li>
+      <li><span class="rules-num">2</span>One workout must be outdoors.</li>
+      <li><span class="rules-num">3</span>Follow a diet. No cheat meals, no alcohol.</li>
+      <li><span class="rules-num">4</span>Drink 1 gallon of water.</li>
+      <li><span class="rules-num">5</span>Read 10 pages of a non-fiction book. No audiobooks.</li>
+      <li><span class="rules-num">6</span>Take a progress picture.</li>
+    </ul>
+    <div class="rules-fail">Miss any task on any day — for any reason — and you start over on Day 1. No exceptions, no substitutions.</div>
+  </div>
+</div>
+
+<!-- Day detail modal -->
+<div class="modal-bg" id="dayBg">
+  <div class="modal" role="dialog" aria-label="Day detail">
+    <div class="modal-head">
+      <span class="modal-title" id="dayTitle">Day</span>
+      <button class="modal-close" id="dayClose" type="button" aria-label="Close">×</button>
+    </div>
+    <img class="day-detail-photo" id="dayPhoto" style="display:none">
+    <ul class="rules-list" id="dayTasks"></ul>
+    <div class="field" id="dayNoteWrap" style="display:none; margin-top:14px;">
+      <label class="field-label">Note</label>
+      <div id="dayNoteText" style="font-size:13.5px; color:var(--text-secondary); line-height:1.5;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+
+  /* ============ Storage ============ */
+  const STATE_KEY = 'hard75:state';
+  function loadJSON(k,f){ try { return JSON.parse(localStorage.getItem(k)) || f; } catch(e){ return f; } }
+  function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function defaultState(){ return { updatedAt: Date.now(), attemptNumber: 1, startDate: null, days: {}, history: [] }; }
+  let state = loadJSON(STATE_KEY, null);
+  if(!state || typeof state!=='object') state = defaultState();
+  if(!state.days) state.days = {};
+  if(!Array.isArray(state.history)) state.history = [];
+  if(!state.attemptNumber) state.attemptNumber = 1;
+
+  function save(){ state.updatedAt = Date.now(); saveJSON(STATE_KEY, state); }
+  function pad2(n){ return n<10 ? '0'+n : ''+n; }
+  function dateKey(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function parseDateKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+  function todayKey(){ return dateKey(new Date()); }
+  function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+
+  const TASK_DEFS = [
+    { key:'workout1', name:'First Workout', sub:'45 minutes', emoji:'💪' },
+    { key:'workout2', name:'Second Workout', sub:'45 minutes, must be outdoors', emoji:'🌳' },
+    { key:'photo',    name:'Take Progress Picture', sub:'', emoji:'📷', camera:true },
+    { key:'reading',  name:'10 Pages of Reading', sub:'Non-fiction, no audiobooks', emoji:'📖' },
+    { key:'water',    name:'Drink 1 Gallon of Water', sub:'3.7 liters', emoji:'💧' },
+    { key:'diet',     name:'Follow a Diet', sub:'', emoji:'🥗' },
+    { key:'noCheat',  name:'No Cheat Meals or Alcohol', sub:'', emoji:'🚫' },
+  ];
+  const TASK_KEYS = TASK_DEFS.map(t=>t.key);
+
+  function emptyDay(){ const d={ photoData:null, note:'' }; TASK_KEYS.forEach(k=>d[k]=false); return d; }
+  function getDay(k){ if(!state.days[k]) state.days[k]=emptyDay(); return state.days[k]; }
+  function allTasksDone(rec){ return !!rec && TASK_KEYS.every(k=>rec[k]); }
+  function doneCount(rec){ if(!rec) return 0; return TASK_KEYS.filter(k=>rec[k]).length; }
+
+  /* ============ Day rollover / restart ============ */
+  function checkRollover(){
+    const tKey = todayKey();
+    if(!state.startDate){ state.startDate = tKey; state.attemptNumber = state.attemptNumber || 1; save(); return; }
+    if(state.startDate === tKey) return;
+    let cursor = parseDateKey(state.startDate);
+    const todayDate = parseDateKey(tKey);
+    let failedAt = null, dayNum = 0;
+    while(cursor < todayDate){
+      dayNum++;
+      const k = dateKey(cursor);
+      if(!allTasksDone(state.days[k])){ failedAt = k; break; }
+      cursor = addDays(cursor, 1);
+    }
+    if(failedAt){
+      state.history.push({ attemptNumber: state.attemptNumber, startDate: state.startDate, failedDate: failedAt, dayReached: dayNum, outcome: 'failed' });
+      state.attemptNumber += 1;
+      state.startDate = tKey;
+    }
+    save();
+  }
+  checkRollover();
+
+  function currentDayNumber(){
+    const start = parseDateKey(state.startDate), today = parseDateKey(todayKey());
+    return Math.round((today-start)/86400000) + 1;
+  }
+
+  /* ============ Photo compression ============ */
+  function compressImage(file, cb){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        const maxDim = 480;
+        let w=img.width, h=img.height;
+        if(w>h){ if(w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; } }
+        else { if(h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; } }
+        const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        cb(canvas.toDataURL('image/jpeg', 0.65));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* ============ Rendering ============ */
+  function showToast(msg){
+    const t=$('toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(showToast._t); showToast._t=setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  function renderHero(){
+    const dayNum = currentDayNumber();
+    const rec = getDay(todayKey());
+    const complete = dayNum >= 75 && allTasksDone(rec);
+    $('heroState').textContent = complete ? 'DONE' : ('DAY '+Math.min(dayNum,75));
+    $('heroSub').textContent = 'Attempt #'+state.attemptNumber+' · Day ends at midnight';
+  }
+
+  function renderTasks(){
+    const rec = getDay(todayKey());
+    const list = $('taskList'); list.innerHTML='';
+    TASK_DEFS.forEach(t=>{
+      const li=document.createElement('li'); li.className='task-row'+(rec[t.key]?' done':'');
+      let checkHtml = '<div class="task-check'+(t.camera?' camera':'')+'">'+(t.camera?'📷':'✓')+'</div>';
+      if(t.camera && rec.photoData) checkHtml = '<img class="task-thumb" src="'+rec.photoData+'" alt="">';
+      const subHtml = t.sub ? '<span class="task-sub">'+t.sub+'</span>' : '';
+      li.innerHTML = checkHtml + '<div class="task-main"><span class="task-name">'+t.name+'</span>'+subHtml+'</div>';
+      li.addEventListener('click', ()=>{
+        if(t.key==='photo'){
+          if(rec.photoData){ rec.photoData=null; rec.photo=false; save(); renderAll(); showToast('Photo removed'); }
+          else { $('photoInput').click(); }
+        } else {
+          rec[t.key] = !rec[t.key]; save(); renderAll();
+        }
+      });
+      list.appendChild(li);
+    });
+  }
+
+  $('photoInput').addEventListener('change', function(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    compressImage(file, function(dataUrl){
+      const rec = getDay(todayKey());
+      rec.photoData = dataUrl; rec.photo = true;
+      save(); renderAll(); showToast('Photo added');
+    });
+    e.target.value = '';
+  });
+
+  $('notesInput').addEventListener('input', function(){
+    const rec = getDay(todayKey());
+    rec.note = this.value; save();
+  });
+
+  function renderNotes(){ $('notesInput').value = getDay(todayKey()).note || ''; }
+
+  function bestRun(){
+    let best=0;
+    state.history.forEach(h=>{ if(h.dayReached>best) best=h.dayReached; });
+    const currentRun = currentDayNumber()-1 + doneCount(getDay(todayKey()))/TASK_KEYS.length;
+    if(Math.floor(currentRun)>best) best=Math.floor(currentRun);
+    return best;
+  }
+
+  function renderStats(){
+    const dayNum = currentDayNumber();
+    $('statDay').textContent = Math.min(dayNum,75);
+    $('statDaySub').textContent = dayNum>=75 ? 'Final day' : (75-dayNum)+' days to go';
+    $('statAttempt').textContent = '#'+state.attemptNumber;
+    $('statAttemptSub').textContent = 'Started '+state.startDate;
+    $('statBest').textContent = bestRun()+' days';
+    $('statAttempts').textContent = state.history.length;
+    $('statAttemptsSub').textContent = state.history.length ? 'Reset '+state.history.length+' time'+(state.history.length===1?'':'s') : 'No restarts yet';
+  }
+
+  /* ============ Progress grid (flat 1-75, like the official app) ============ */
+  function isFailedDate(k){ return state.history.some(h=>h.failedDate===k); }
+  function renderProgressGrid(){
+    const el = $('progressGrid'); el.innerHTML='';
+    const start = parseDateKey(state.startDate);
+    const tKey = todayKey();
+    for(let i=0;i<75;i++){
+      const dObj = addDays(start,i);
+      const k = dateKey(dObj);
+      const rec = state.days[k];
+      const btn = document.createElement('button'); btn.type='button';
+      let cls='pg-cell';
+      if(isFailedDate(k)) cls+=' failed';
+      else if(rec && allTasksDone(rec)) cls+=' done';
+      else if(rec && doneCount(rec)>0) cls+=' partial';
+      else cls+=' future';
+      if(k===tKey) cls+=' today';
+      btn.className=cls;
+      btn.textContent = i+1;
+      btn.addEventListener('click', ()=>{ if(state.days[k]) openDayDetail(k); });
+      el.appendChild(btn);
+    }
+  }
+
+  function openDayDetail(k){
+    const rec = state.days[k];
+    $('dayTitle').textContent = parseDateKey(k).toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
+    const photoEl=$('dayPhoto');
+    if(rec && rec.photoData){ photoEl.src=rec.photoData; photoEl.style.display='block'; }
+    else { photoEl.style.display='none'; }
+    const list=$('dayTasks'); list.innerHTML='';
+    if(!rec){
+      const li=document.createElement('li'); li.textContent='No data logged for this day.'; list.appendChild(li);
+    } else {
+      TASK_DEFS.forEach(t=>{
+        const li=document.createElement('li');
+        li.innerHTML='<span class="rules-num" style="background:'+(rec[t.key]?'#fff':'var(--accent)')+';color:'+(rec[t.key]?'#000':'#fff')+'">'+(rec[t.key]?'✓':'×')+'</span>'+t.name;
+        list.appendChild(li);
+      });
+    }
+    if(rec && rec.note){ $('dayNoteWrap').style.display='block'; $('dayNoteText').textContent=rec.note; }
+    else { $('dayNoteWrap').style.display='none'; }
+    $('dayBg').classList.add('open');
+  }
+  $('dayClose').addEventListener('click', ()=>$('dayBg').classList.remove('open'));
+  $('dayBg').addEventListener('click', (e)=>{ if(e.target.id==='dayBg') $('dayBg').classList.remove('open'); });
+
+  /* ============ Previous (attempt history) tab ============ */
+  function renderHistoryPane(){
+    const el=$('historyPane');
+    const rows = state.history.slice().reverse();
+    if(!rows.length){
+      el.innerHTML = '<div class="empty-state">No previous attempts — this is attempt #'+state.attemptNumber+'.</div>';
+      return;
+    }
+    el.innerHTML='';
+    rows.forEach(h=>{
+      const div=document.createElement('div'); div.className='attempt-row';
+      div.innerHTML='<span class="attempt-icon">💥</span>'
+        +'<div class="attempt-main"><span class="attempt-name">Attempt #'+h.attemptNumber+'</span><span class="attempt-sub">Started '+h.startDate+' · failed '+h.failedDate+'</span></div>'
+        +'<span class="attempt-days">Day '+h.dayReached+'</span>';
+      el.appendChild(div);
+    });
+  }
+  $('tabCurrent').addEventListener('click', ()=>{
+    $('tabCurrent').classList.add('on'); $('tabHistory').classList.remove('on');
+    $('currentPane').style.display=''; $('historyPane').style.display='none';
+  });
+  $('tabHistory').addEventListener('click', ()=>{
+    $('tabHistory').classList.add('on'); $('tabCurrent').classList.remove('on');
+    $('currentPane').style.display='none'; $('historyPane').style.display='';
+  });
+
+  /* ============ Manual restart ============ */
+  $('restartBtn').addEventListener('click', ()=>{
+    if(!confirm('Restart the challenge from Day 1? This ends attempt #'+state.attemptNumber+'.')) return;
+    state.history.push({ attemptNumber: state.attemptNumber, startDate: state.startDate, failedDate: todayKey(), dayReached: currentDayNumber()-1, outcome: 'restarted' });
+    state.attemptNumber += 1;
+    state.startDate = todayKey();
+    save();
+    renderAll();
+    showToast('Restarted — back to Day 1');
+  });
+
+  /* ============ Rules modal ============ */
+  $('rulesBtn').addEventListener('click', ()=>$('rulesBg').classList.add('open'));
+  $('rulesClose').addEventListener('click', ()=>$('rulesBg').classList.remove('open'));
+  $('rulesBg').addEventListener('click', (e)=>{ if(e.target.id==='rulesBg') $('rulesBg').classList.remove('open'); });
+
+  /* ============ Menu ============ */
+  $('menuBtn').addEventListener('click',()=>$('menuOverlay').classList.add('show'));
+  $('menuClose').addEventListener('click',()=>$('menuOverlay').classList.remove('show'));
+  $('menuOverlay').addEventListener('click',(e)=>{ if(e.target.id==='menuOverlay') $('menuOverlay').classList.remove('show'); });
+
+  function renderAll(){
+    renderHero(); renderTasks(); renderNotes(); renderStats(); renderProgressGrid(); renderHistoryPane();
+  }
+  renderAll();
+
+  /* ============ Cloud sync ============ */
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
+      appKey: '75hard',
+      syncedKeys: [STATE_KEY],
+      merge: function(key, localVal, remoteVal){
+        if(key!==STATE_KEY) return undefined;
+        const l = localVal || {}, r = remoteVal || {};
+        return (r.updatedAt||0) >= (l.updatedAt||0) ? r : l;
+      },
+      onApplied: function(){
+        const fresh = loadJSON(STATE_KEY, null);
+        if(fresh && typeof fresh==='object'){
+          state = fresh;
+          if(!state.days) state.days = {};
+          if(!Array.isArray(state.history)) state.history = [];
+          if(!state.attemptNumber) state.attemptNumber = 1;
+        }
+        checkRollover();
+        renderAll();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
