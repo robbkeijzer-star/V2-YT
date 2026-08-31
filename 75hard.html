@@ -110,6 +110,15 @@ body {
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .day-settings-btn:active { background: rgba(255,255,255,0.1); }
+.day-hero-row { display: flex; align-items: center; justify-content: center; gap: 16px; position: relative; }
+.completed-stamp {
+  position: absolute; top: 50%; left: 50%; transform: translate(calc(-50% - 15px), calc(-50% - 10px)) rotate(-14deg) scale(0.8);
+  border: 3px solid var(--accent); color: var(--accent); background: rgba(0,0,0,0.65);
+  font-size: 20px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 5px 16px; border-radius: 6px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 2;
+}
+.day-hero-row.completed .completed-stamp { opacity: 1; transform: translate(calc(-50% - 15px), calc(-50% - 10px)) rotate(-14deg) scale(1); }
 .day-num-hero { text-align: center; font-size: 52px; font-weight: 800; letter-spacing: -0.02em;
   color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; }
 .day-sub { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -155,9 +164,15 @@ body {
 .task-row-water { align-items: flex-start; }
 .task-row-water .task-check { margin-top: 2px; }
 .task-row-water .task-main { gap: 4px; }
-.water-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.water-bar-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.water-bar { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; }
 .water-seg { flex: 1 1 10px; min-width: 10px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.14); cursor: pointer; transition: background 0.15s; }
 .water-seg.filled { background: #fff; }
+.water-add-btn { flex-shrink: 0; margin-left: auto; width: 26px; height: 26px; border-radius: 50%; border: 0;
+  background: rgba(255,255,255,0.08); color: var(--text-secondary); font-size: 13px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: background 0.15s, transform 0.1s; }
+.water-add-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.9); }
 .water-count { font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--text-tertiary); flex-shrink: 0; white-space: nowrap; align-self: flex-start; margin-top: 2px; }
 
 /* ===== Settings chips ===== */
@@ -311,10 +326,13 @@ body {
     <div class="section-title">Today<button class="section-title-btn" id="rulesBtn" type="button">Rules</button></div>
     <div class="gm-card">
       <div class="day-card-top">
-        <div class="spade-badge"><span class="spade-glyph">♠</span><span class="spade-num">75</span></div>
+        <div class="day-hero-row" id="dayHeroRow">
+          <div class="spade-badge"><span class="spade-glyph">♠</span><span class="spade-num">75</span></div>
+          <div class="day-num-hero" id="heroState">DAY —</div>
+          <div class="completed-stamp">COMPLETED</div>
+        </div>
         <button class="day-settings-btn" id="settingsBtn" type="button" aria-label="Challenge settings">⚙️</button>
       </div>
-      <div class="day-num-hero" id="heroState">DAY —</div>
       <div class="day-sub" id="heroSub">—</div>
 
       <ul class="task-list" id="taskList"></ul>
@@ -575,6 +593,7 @@ body {
     const complete = dayNum >= 75 && allTasksDone(rec);
     $('heroState').textContent = complete ? 'DONE' : ('DAY '+Math.min(dayNum,75));
     $('heroSub').textContent = 'Attempt #'+state.attemptNumber+' · Day ends at midnight';
+    $('dayHeroRow').classList.toggle('completed', allTasksDone(rec));
   }
 
   function setWaterCount(n){
@@ -626,7 +645,10 @@ body {
           '<div class="task-main">'+
             '<span class="task-name">'+t.name+'</span>'+
             '<span class="task-sub">'+waterUnitMl()+'ml per glass · '+total+' glasses</span>'+
-            '<div class="water-bar">'+segsHtml+'</div>'+
+            '<div class="water-bar-row">'+
+              '<div class="water-bar">'+segsHtml+'</div>'+
+              '<button type="button" class="water-add-btn" aria-label="Add one unit">💧</button>'+
+            '</div>'+
           '</div>'+
           '<span class="water-count">'+count+' / '+total+'</span>';
         li.querySelector('.task-check').addEventListener('click', (e)=>{
@@ -642,6 +664,12 @@ body {
             if(newCount>=total && count<total) pendingCheckAnim='water';
             setWaterCount(newCount);
           });
+        });
+        li.querySelector('.water-add-btn').addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const newCount = count+1;
+          if(newCount>=total && count<total) pendingCheckAnim='water';
+          setWaterCount(newCount);
         });
         li.querySelectorAll('.task-move-btn').forEach(btn=>{
           btn.addEventListener('click', (e)=>{ e.stopPropagation(); moveTask(t.key, parseInt(btn.dataset.dir,10)); });
