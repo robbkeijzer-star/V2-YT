@@ -529,6 +529,7 @@ body::after {
         <input class="gm-input mg-input" id="customMg" type="number" min="0" placeholder="mg" autocomplete="off">
         <button class="gm-add" id="customAdd" type="button">Add</button>
       </div>
+      <button class="retro-toggle" id="customManageBtn" type="button">🗂️ Manage custom drinks</button>
 
       <div id="retroToggleRow">
         <button class="retro-toggle" id="retroToggle" type="button">🕒 Log for a different day/time</button>
@@ -600,6 +601,16 @@ body::after {
       <button class="modal-del" id="editDelete" type="button">Delete</button>
       <button class="gm-add" id="editSave" type="button">Save</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="customManageBg">
+  <div class="modal" role="dialog" aria-label="Manage custom drinks">
+    <div class="modal-head">
+      <span class="modal-title">Custom Drinks</span>
+      <button class="modal-close" id="customManageClose" type="button" aria-label="Close">×</button>
+    </div>
+    <ul class="results" id="customManageList" style="max-height:none;"></ul>
   </div>
 </div>
 
@@ -1350,6 +1361,27 @@ body::after {
     if(!name||!(mg>=0)) return; custom.push({id:uid('cc'),n:name,mg:mg,e:'➕',c:'Custom'}); saveJSON(CUSTOM_KEY,custom);
     logDrink({n:name,mg:mg,e:'➕'}); $('customName').value=''; $('customMg').value=''; renderResults($('search').value);
   }
+  function renderCustomManage(){
+    const el=$('customManageList'); el.innerHTML='';
+    if(custom.length===0){
+      const li=document.createElement('li'); li.className='results-empty';
+      li.textContent='No custom drinks yet — add one below the search box.';
+      el.appendChild(li); return;
+    }
+    custom.slice().forEach(c=>{
+      const li=document.createElement('li'); li.className='log-row';
+      li.innerHTML='<div class="log-emoji">➕</div>'
+        +'<div class="log-main"><span class="log-name">'+escapeHtml(c.n)+'<b>'+c.mg+' mg</b></span></div>'
+        +'<button class="log-del" type="button" aria-label="Delete">×</button>';
+      li.querySelector('.log-del').addEventListener('click',()=>{
+        custom = custom.filter(x=>x.id!==c.id);
+        saveJSON(CUSTOM_KEY, custom);
+        renderCustomManage();
+        renderResults($('search').value);
+      });
+      el.appendChild(li);
+    });
+  }
 
   /* ============ Scrub interaction ============ */
   function scrubFromEvent(e){
@@ -1373,6 +1405,9 @@ body::after {
   $('search').addEventListener('input',(e)=>renderResults(e.target.value));
   $('customAdd').addEventListener('click',addCustom);
   $('customMg').addEventListener('keydown',(e)=>{ if(e.key==='Enter') addCustom(); });
+  $('customManageBtn').addEventListener('click',()=>{ renderCustomManage(); $('customManageBg').classList.add('open'); });
+  $('customManageClose').addEventListener('click',()=>$('customManageBg').classList.remove('open'));
+  $('customManageBg').addEventListener('click',(e)=>{ if(e.target.id==='customManageBg') $('customManageBg').classList.remove('open'); });
   $('retroToggle').addEventListener('click',openRetro);
   $('retroCancel').addEventListener('click',closeRetro);
   $('retroDate').addEventListener('change',updateRetroTs);
