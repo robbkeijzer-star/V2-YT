@@ -170,7 +170,6 @@ body {
 .task-row-water .task-main { gap: 4px; }
 .water-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .water-seg { flex: 1 1 10px; min-width: 10px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.14); cursor: pointer; transition: background 0.15s; }
-.water-seg.filled { background: #fff; }
 .water-count-col { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; margin-top: 2px; }
 .water-count { font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; color: var(--text-tertiary); white-space: nowrap; }
 .water-add-btn { width: 26px; height: 26px; border-radius: 50%; border: 0;
@@ -505,6 +504,18 @@ body {
   const GALLON_ML = 3785;
   function waterUnitMl(){ return state.settings.waterUnitMl || 250; }
   function waterTotalSegments(){ return Math.max(1, Math.ceil(GALLON_ML / waterUnitMl())); }
+  function waterUnitName(){
+    const match = state.settings.waterPresets.find(p=>p.ml===waterUnitMl());
+    return match ? match.name : 'unit';
+  }
+  function waterSegColor(i, total){
+    const t = total>1 ? i/(total-1) : 1;
+    const start = [248,197,193], end = [232,52,43];
+    const r = Math.round(start[0] + (end[0]-start[0])*t);
+    const g = Math.round(start[1] + (end[1]-start[1])*t);
+    const b = Math.round(start[2] + (end[2]-start[2])*t);
+    return 'rgb('+r+','+g+','+b+')';
+  }
   function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function save(){ state.updatedAt = Date.now(); saveJSON(STATE_KEY, state); }
@@ -647,12 +658,16 @@ body {
         li.className='task-row task-row-water'+(rec.water?' done':'');
         const count = rec.waterCount;
         let segsHtml='';
-        for(let i=0;i<total;i++){ segsHtml += '<span class="water-seg'+(i<count?' filled':'')+'" data-i="'+i+'"></span>'; }
+        for(let i=0;i<total;i++){
+          const filled = i<count;
+          const style = filled ? ' style="background:'+waterSegColor(i,total)+'"' : '';
+          segsHtml += '<span class="water-seg'+(filled?' filled':'')+'"'+style+' data-i="'+i+'"></span>';
+        }
         li.innerHTML = moveHtml +
           '<div class="task-check'+(animKey==='water'?' check-pop':'')+'">'+(rec.water?'✓':'')+'</div>'+
           '<div class="task-main">'+
             '<span class="task-name">'+t.name+'</span>'+
-            '<span class="task-sub">'+waterUnitMl()+'ml per glass · '+total+' glasses</span>'+
+            '<span class="task-sub">'+waterUnitMl()+'ml per '+waterUnitName()+' · '+total+' × '+waterUnitName()+'</span>'+
             '<div class="water-bar">'+segsHtml+'</div>'+
           '</div>'+
           '<div class="water-count-col">'+

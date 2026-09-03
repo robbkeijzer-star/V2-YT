@@ -1267,15 +1267,16 @@ body::after {
   function renderEditSwapResults(q){
     const el=$('editSwapResults'); const query=(q||'').trim().toLowerCase(); let items=allDrinks();
     if(query){
-      items=items.filter(d=>d.n.toLowerCase().includes(query)||d.c.toLowerCase().includes(query)).slice(0,40);
+      items=items.filter(d=>d.n.toLowerCase().includes(query)||d.c.toLowerCase().includes(query));
     } else {
       const rank=new Map(recentDrinkKeys(items.length).map((k,i)=>[k,i]));
       items=items.slice().sort((a,b)=>{
         const ra=rank.has(a.n+'|'+a.mg) ? rank.get(a.n+'|'+a.mg) : Infinity;
         const rb=rank.has(b.n+'|'+b.mg) ? rank.get(b.n+'|'+b.mg) : Infinity;
         return ra-rb;
-      }).slice(0,12);
+      });
     }
+    items=items.slice().sort((a,b)=>(a.c==='Custom')-(b.c==='Custom')).slice(0, query?40:12);
     el.innerHTML='';
     items.forEach(d=>{ const li=document.createElement('li'); li.className='result';
       li.innerHTML='<span class="result-emoji">'+iconHtml(d, false)+'</span><span class="result-name">'+escapeHtml(d.n)+' <span class="result-cat">· '+d.c+'</span></span><span class="result-mg">'+d.mg+'<small> mg</small></span>';
@@ -1341,15 +1342,15 @@ body::after {
     const el=$('results'); const query=(q||'').trim().toLowerCase(); let items=allDrinks();
     if(query){
       items=items.filter(d=>d.n.toLowerCase().includes(query)||d.c.toLowerCase().includes(query));
-      items=items.slice(0,40);
     } else {
       const rank=new Map(recentDrinkKeys(items.length).map((k,i)=>[k,i]));
       items=items.slice().sort((a,b)=>{
         const ra=rank.has(a.n+'|'+a.mg) ? rank.get(a.n+'|'+a.mg) : Infinity;
         const rb=rank.has(b.n+'|'+b.mg) ? rank.get(b.n+'|'+b.mg) : Infinity;
         return ra-rb;
-      }).slice(0,12);
+      });
     }
+    items=items.slice().sort((a,b)=>(a.c==='Custom')-(b.c==='Custom')).slice(0, query?40:12);
     el.innerHTML='';
     if(items.length===0){ const li=document.createElement('li'); li.className='results-empty'; li.textContent='No match — add it as a custom drink below.'; el.appendChild(li); return; }
     items.forEach(d=>{ const li=document.createElement('li'); li.className='result';
