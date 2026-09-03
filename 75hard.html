@@ -192,6 +192,7 @@ body {
 }
 .subgoal-name { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; }
 .subgoal-row.done .subgoal-name { color: var(--text-tertiary); text-decoration: line-through; text-decoration-color: rgba(125,211,252,0.4); }
+.subgoal-emoji { font-size: 17px; flex-shrink: 0; margin-left: 8px; }
 
 /* ===== Water segmented bar ===== */
 .task-row-water .task-row-main { align-items: flex-start; }
@@ -231,6 +232,7 @@ body {
 .preset-edit-row input:focus { border-color: var(--accent); }
 .preset-edit-row input[data-field="name"] { flex: 1; min-width: 0; }
 .preset-edit-row input[data-field="ml"] { width: 70px; flex-shrink: 0; text-align: right; }
+.preset-edit-row input[data-field="emoji"] { width: 46px; flex-shrink: 0; text-align: center; }
 .preset-edit-unit { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
 .preset-remove-btn { border: 0; background: rgba(232,52,43,0.15); color: var(--accent); width: 28px; height: 28px;
   border-radius: 8px; font-size: 15px; line-height: 1; cursor: pointer; flex-shrink: 0;
@@ -492,7 +494,12 @@ body {
     <div class="field">
       <label class="field-label">Task order</label>
       <button class="lock-toggle-btn" id="taskLockBtn" type="button"></button>
-      <div class="field-note">Unlock to drag tasks into a new order, then lock it again to hide the drag handles.</div>
+      <div class="field-note">Unlock to reorder tasks with the ▲▼ arrows and to edit the bonus goals below, then lock it again to hide those controls.</div>
+    </div>
+    <div class="field">
+      <label class="field-label">Bonus goals</label>
+      <div class="preset-edit-list" id="subgoalEditList"></div>
+      <div class="field-note" id="subgoalEditNote">Unlock "Task order" above to add, edit, reorder, or remove bonus goals.</div>
     </div>
     <div class="field">
       <div class="field-label-row">
@@ -559,18 +566,39 @@ body {
   const STATE_KEY = 'hard75:state';
   function loadJSON(k,f){ try { return JSON.parse(localStorage.getItem(k)) || f; } catch(e){ return f; } }
   function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
   function defaultWaterPresets(){ return [ { name:'Glass', ml:250 }, { name:'Bottle', ml:500 }, { name:'Large bottle', ml:1000 } ]; }
-  function defaultState(){ return { updatedAt: Date.now(), attemptNumber: 1, startDate: null, days: {}, history: [], settings: { waterUnitMl: 250, waterPresets: defaultWaterPresets() }, taskOrder: null }; }
+  function defaultSubgoals(){
+    return [
+      { id:uid(), name:'Wake up 7AM, no snoozing', emoji:'⏰' },
+      { id:uid(), name:'4L water (750ml + creatine & salt on waking)', emoji:'💧' },
+      { id:uid(), name:'Eat only after first workout (16:8 IF)', emoji:'🍽️' },
+      { id:uid(), name:'10,000 steps (excl. running)', emoji:'🚶' },
+      { id:uid(), name:'2 minutes of silence', emoji:'🤫' },
+      { id:uid(), name:'Wim Hof breathing (5 min)', emoji:'🌬️' },
+      { id:uid(), name:'First coffee 90 min after waking', emoji:'☕' },
+      { id:uid(), name:'15 min non-fiction reading', emoji:'📖' },
+      { id:uid(), name:'Track every calorie', emoji:'🔢' },
+      { id:uid(), name:'Animal-based diet, ≤2300 cal, no overeating', emoji:'🥩' },
+      { id:uid(), name:'No alcohol, drugs or nicotine', emoji:'🚭' },
+      { id:uid(), name:'Track weight (every morning)', emoji:'⚖️' },
+      { id:uid(), name:'Log bowel movement', emoji:'💩' },
+      { id:uid(), name:'No phone/social first & last hour', emoji:'📵' },
+      { id:uid(), name:'No masturbation', emoji:'🚫' },
+    ];
+  }
+  function defaultState(){ return { updatedAt: Date.now(), attemptNumber: 1, startDate: null, days: {}, history: [], settings: { waterUnitMl: 250, waterPresets: defaultWaterPresets(), subgoalDefs: defaultSubgoals() }, taskOrder: null }; }
   let state = loadJSON(STATE_KEY, null);
   if(!state || typeof state!=='object') state = defaultState();
   if(!state.days) state.days = {};
   if(!Array.isArray(state.history)) state.history = [];
   if(!state.attemptNumber) state.attemptNumber = 1;
-  if(!state.settings || typeof state.settings!=='object') state.settings = { waterUnitMl: 250, waterPresets: defaultWaterPresets() };
+  if(!state.settings || typeof state.settings!=='object') state.settings = { waterUnitMl: 250, waterPresets: defaultWaterPresets(), subgoalDefs: defaultSubgoals() };
   if(!state.settings.waterUnitMl) state.settings.waterUnitMl = 250;
   if(!Array.isArray(state.settings.waterPresets) || !state.settings.waterPresets.length) state.settings.waterPresets = defaultWaterPresets();
   if(typeof state.settings.tasksUnlocked !== 'boolean') state.settings.tasksUnlocked = false;
   if(!state.settings.taskNotes || typeof state.settings.taskNotes!=='object') state.settings.taskNotes = {};
+  if(!Array.isArray(state.settings.subgoalDefs)) state.settings.subgoalDefs = defaultSubgoals();
 
   const GALLON_ML = 3785;
   function waterUnitMl(){ return state.settings.waterUnitMl || 250; }
@@ -607,25 +635,6 @@ body {
   ];
   const TASK_KEYS = TASK_DEFS.map(t=>t.key);
 
-  const SUBGOAL_DEFS = [
-    { key:'wakeNoSnooze',  name:'Wake up 7AM, no snoozing', emoji:'⏰' },
-    { key:'water4L',       name:'4L water (750ml + creatine & salt on waking)', emoji:'💧' },
-    { key:'fastingWindow', name:'Eat only after first workout (16:8 IF)', emoji:'🍽️' },
-    { key:'steps10k',      name:'10,000 steps (excl. running)', emoji:'🚶' },
-    { key:'silence2min',   name:'2 minutes of silence', emoji:'🤫' },
-    { key:'wimHof',        name:'Wim Hof breathing (5 min)', emoji:'🌬️' },
-    { key:'coffeeDelay',   name:'First coffee 90 min after waking', emoji:'☕' },
-    { key:'reading15',     name:'15 min non-fiction reading', emoji:'📖' },
-    { key:'trackCalories', name:'Track every calorie', emoji:'🔢' },
-    { key:'animalDiet',    name:'Animal-based diet, ≤2300 cal, no overeating', emoji:'🥩' },
-    { key:'noSubstances',  name:'No alcohol, drugs or nicotine', emoji:'🚭' },
-    { key:'trackWeight',   name:'Track weight (every morning)', emoji:'⚖️' },
-    { key:'trackPoop',     name:'Log bowel movement', emoji:'💩' },
-    { key:'noPhoneHours',  name:'No phone/social first & last hour', emoji:'📵' },
-    { key:'noPmo',         name:'No masturbation', emoji:'🚫' },
-  ];
-  const SUBGOAL_KEYS = SUBGOAL_DEFS.map(s=>s.key);
-
   function getOrderedTaskDefs(){
     if(!Array.isArray(state.taskOrder)) state.taskOrder = TASK_KEYS.slice();
     let order = state.taskOrder.filter(k=>TASK_KEYS.indexOf(k)!==-1);
@@ -639,14 +648,12 @@ body {
   function emptyDay(){
     const d={ photoData:null, note:'', waterCount:0, subgoals:{} };
     TASK_KEYS.forEach(k=>d[k]=false);
-    SUBGOAL_KEYS.forEach(k=>d.subgoals[k]=false);
     return d;
   }
   function getDay(k){
     if(!state.days[k]) state.days[k]=emptyDay();
     const rec = state.days[k];
     if(!rec.subgoals || typeof rec.subgoals!=='object') rec.subgoals = {};
-    SUBGOAL_KEYS.forEach(key=>{ if(typeof rec.subgoals[key]!=='boolean') rec.subgoals[key]=false; });
     return rec;
   }
   function allTasksDone(rec){ return !!rec && TASK_KEYS.every(k=>rec[k]); }
@@ -1097,12 +1104,71 @@ body {
     list.appendChild(addBtn);
   }
 
+  function renderSubgoalEditor(){
+    const unlocked = !!state.settings.tasksUnlocked;
+    const defs = state.settings.subgoalDefs;
+    $('subgoalEditList').classList.toggle('show', unlocked);
+    $('subgoalEditNote').textContent = unlocked
+      ? 'Add, edit, reorder, or remove your bonus goals below.'
+      : 'Unlock "Task order" above to add, edit, reorder, or remove bonus goals.';
+    if(!unlocked) return;
+
+    const list = $('subgoalEditList'); list.innerHTML='';
+    defs.forEach((s,idx)=>{
+      const row=document.createElement('div'); row.className='preset-edit-row';
+      row.innerHTML =
+        '<input type="text" data-id="'+s.id+'" data-field="emoji" value="'+escAttr(s.emoji)+'" maxlength="4" placeholder="🙂">'+
+        '<input type="text" data-id="'+s.id+'" data-field="name" value="'+escAttr(s.name)+'" placeholder="Bonus goal name">'+
+        '<span class="task-move">'+
+          '<button type="button" class="task-move-btn" data-id="'+s.id+'" data-dir="-1"'+(idx===0?' disabled':'')+' aria-label="Move up">▲</button>'+
+          '<button type="button" class="task-move-btn" data-id="'+s.id+'" data-dir="1"'+(idx===defs.length-1?' disabled':'')+' aria-label="Move down">▼</button>'+
+        '</span>'+
+        '<button type="button" class="preset-remove-btn" data-id="'+s.id+'" aria-label="Remove">×</button>';
+      list.appendChild(row);
+    });
+    list.querySelectorAll('input[data-field="emoji"]').forEach(inp=>{
+      inp.addEventListener('change', function(){
+        const item = state.settings.subgoalDefs.find(x=>x.id===this.dataset.id);
+        if(item){ item.emoji = this.value.trim() || '🙂'; save(); renderSubgoals(); renderSubgoalEditor(); }
+      });
+    });
+    list.querySelectorAll('input[data-field="name"]').forEach(inp=>{
+      inp.addEventListener('change', function(){
+        const item = state.settings.subgoalDefs.find(x=>x.id===this.dataset.id);
+        if(item){ item.name = this.value.trim() || 'Bonus goal'; save(); renderSubgoals(); renderSubgoalEditor(); }
+      });
+    });
+    list.querySelectorAll('.task-move-btn').forEach(btn=>{
+      btn.addEventListener('click', function(){
+        const id=this.dataset.id, dir=parseInt(this.dataset.dir,10);
+        const arr = state.settings.subgoalDefs;
+        const i = arr.findIndex(x=>x.id===id);
+        const newI = i+dir;
+        if(i<0 || newI<0 || newI>=arr.length) return;
+        const tmp=arr[i]; arr[i]=arr[newI]; arr[newI]=tmp;
+        save(); renderSubgoals(); renderSubgoalEditor();
+      });
+    });
+    list.querySelectorAll('.preset-remove-btn').forEach(btn=>{
+      btn.addEventListener('click', function(){
+        state.settings.subgoalDefs = state.settings.subgoalDefs.filter(x=>x.id!==this.dataset.id);
+        save(); renderSubgoals(); renderSubgoalEditor();
+      });
+    });
+    const addBtn=document.createElement('button'); addBtn.type='button'; addBtn.className='preset-add-btn'; addBtn.textContent='+ Add bonus goal';
+    addBtn.addEventListener('click', ()=>{
+      state.settings.subgoalDefs.push({ id:uid(), name:'New bonus goal', emoji:'🙂' });
+      save(); renderSubgoals(); renderSubgoalEditor();
+    });
+    list.appendChild(addBtn);
+  }
+
   $('taskLockBtn').addEventListener('click', ()=>{
     state.settings.tasksUnlocked = !state.settings.tasksUnlocked;
-    save(); renderTasks(); renderSettings();
+    save(); renderTasks(); renderSettings(); renderSubgoalEditor();
   });
   $('presetsEditBtn').addEventListener('click', ()=>{ presetsEditMode = !presetsEditMode; renderSettings(); });
-  $('settingsBtn').addEventListener('click', ()=>{ presetsEditMode=false; renderSettings(); renderTaskNotes(); $('settingsBg').classList.add('open'); });
+  $('settingsBtn').addEventListener('click', ()=>{ presetsEditMode=false; renderSettings(); renderTaskNotes(); renderSubgoalEditor(); $('settingsBg').classList.add('open'); });
   $('settingsClose').addEventListener('click', ()=>$('settingsBg').classList.remove('open'));
   $('settingsSave').addEventListener('click', ()=>{
     showToast('Settings saved', 'success');
@@ -1122,18 +1188,25 @@ body {
 
   function renderSubgoals(){
     const rec = getDay(todayKey());
-    const done = SUBGOAL_KEYS.filter(k=>rec.subgoals[k]).length;
-    $('subgoalProgress').innerHTML = '<b>'+done+'</b> / '+SUBGOAL_KEYS.length+' bonus goals today';
+    const defs = state.settings.subgoalDefs;
+    const done = defs.filter(s=>rec.subgoals[s.id]).length;
+    $('subgoalProgress').innerHTML = '<b>'+done+'</b> / '+defs.length+' bonus goals today';
     const animKey = pendingSubgoalAnim; pendingSubgoalAnim = null;
     const list = $('subgoalList'); list.innerHTML='';
-    SUBGOAL_DEFS.forEach(s=>{
-      const li=document.createElement('li'); li.className='subgoal-row'+(rec.subgoals[s.key]?' done':'');
-      li.innerHTML = '<div class="subgoal-check'+(animKey===s.key?' check-pop':'')+'">'+(rec.subgoals[s.key]?'✓':'')+'</div>'+
-        '<span class="subgoal-name">'+s.emoji+' '+s.name+'</span>';
+    if(defs.length===0){
+      const li=document.createElement('li'); li.className='empty-state'; li.textContent='No bonus goals yet — add some in Settings.';
+      list.appendChild(li); return;
+    }
+    defs.forEach(s=>{
+      const on = !!rec.subgoals[s.id];
+      const li=document.createElement('li'); li.className='subgoal-row'+(on?' done':'');
+      li.innerHTML = '<div class="subgoal-check'+(animKey===s.id?' check-pop':'')+'">'+(on?'✓':'')+'</div>'+
+        '<span class="subgoal-name">'+s.name+'</span>'+
+        '<span class="subgoal-emoji">'+s.emoji+'</span>';
       li.addEventListener('click', ()=>{
-        const turningOn = !rec.subgoals[s.key];
-        rec.subgoals[s.key] = !rec.subgoals[s.key];
-        if(turningOn) pendingSubgoalAnim = s.key;
+        const turningOn = !rec.subgoals[s.id];
+        rec.subgoals[s.id] = turningOn;
+        if(turningOn) pendingSubgoalAnim = s.id;
         save();
         renderSubgoals();
       });
@@ -1164,11 +1237,12 @@ body {
           if(!state.days) state.days = {};
           if(!Array.isArray(state.history)) state.history = [];
           if(!state.attemptNumber) state.attemptNumber = 1;
-          if(!state.settings || typeof state.settings!=='object') state.settings = { waterUnitMl: 250, waterPresets: defaultWaterPresets() };
+          if(!state.settings || typeof state.settings!=='object') state.settings = { waterUnitMl: 250, waterPresets: defaultWaterPresets(), subgoalDefs: defaultSubgoals() };
           if(!state.settings.waterUnitMl) state.settings.waterUnitMl = 250;
           if(!Array.isArray(state.settings.waterPresets) || !state.settings.waterPresets.length) state.settings.waterPresets = defaultWaterPresets();
           if(typeof state.settings.tasksUnlocked !== 'boolean') state.settings.tasksUnlocked = false;
           if(!state.settings.taskNotes || typeof state.settings.taskNotes!=='object') state.settings.taskNotes = {};
+          if(!Array.isArray(state.settings.subgoalDefs)) state.settings.subgoalDefs = defaultSubgoals();
         }
         checkRollover();
         renderAll();
