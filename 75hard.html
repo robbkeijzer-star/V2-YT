@@ -542,7 +542,7 @@ body {
 
   const GALLON_ML = 3785;
   function waterUnitMl(){ return state.settings.waterUnitMl || 250; }
-  function waterTotalSegments(){ return Math.max(1, Math.ceil(GALLON_ML / waterUnitMl())); }
+  function waterTotalSegments(){ return Math.max(1, Math.round(GALLON_ML / waterUnitMl())); }
   function waterUnitName(){
     const match = state.settings.waterPresets.find(p=>p.ml===waterUnitMl());
     return match ? match.name : 'unit';
