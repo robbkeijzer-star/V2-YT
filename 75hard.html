@@ -173,6 +173,26 @@ body {
 .task-sub { font-size: 10.5px; color: var(--text-tertiary); }
 .task-thumb { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
 
+/* ===== Bonus goals (non-restart) ===== */
+.subgoal-progress { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 6px; }
+.subgoal-progress b { color: #7DD3FC; font-family: var(--font-mono); font-size: 13px; }
+.subgoal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.subgoal-row { display: flex; align-items: center; gap: 12px; padding: 11px 2px;
+  border-top: 1px solid rgba(255,255,255,0.06); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.subgoal-row:first-child { border-top: 0; }
+.subgoal-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.28);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 800; color: transparent;
+  position: relative; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.subgoal-row.done .subgoal-check { background: #7DD3FC; border-color: #7DD3FC; color: #06222E; }
+.subgoal-check.check-pop { animation: taskCheckPop 0.35s cubic-bezier(.34,1.56,.64,1); }
+.subgoal-check.check-pop::before {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%; background: rgba(125,211,252,0.5);
+  animation: taskCheckRipple 0.6s ease-out; pointer-events: none; z-index: -1;
+}
+.subgoal-name { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; }
+.subgoal-row.done .subgoal-name { color: var(--text-tertiary); text-decoration: line-through; text-decoration-color: rgba(125,211,252,0.4); }
+
 /* ===== Water segmented bar ===== */
 .task-row-water .task-row-main { align-items: flex-start; }
 .task-row-water .task-check { margin-top: 2px; }
@@ -380,6 +400,16 @@ body {
     </div>
   </div>
 
+  <!-- BONUS GOALS (never resets the streak) -->
+  <div class="section">
+    <div class="section-title">Bonus</div>
+    <div class="gm-card">
+      <div class="subgoal-progress" id="subgoalProgress"></div>
+      <ul class="subgoal-list" id="subgoalList"></ul>
+      <div class="field-note">These are extra habits — missing one never restarts your 75 Hard streak.</div>
+    </div>
+  </div>
+
   <!-- STATS -->
   <div class="section">
     <div class="section-title">Stats</div>
@@ -577,6 +607,25 @@ body {
   ];
   const TASK_KEYS = TASK_DEFS.map(t=>t.key);
 
+  const SUBGOAL_DEFS = [
+    { key:'wakeNoSnooze',  name:'Wake up 7AM, no snoozing', emoji:'⏰' },
+    { key:'water4L',       name:'4L water (750ml + creatine & salt on waking)', emoji:'💧' },
+    { key:'fastingWindow', name:'Eat only after first workout (16:8 IF)', emoji:'🍽️' },
+    { key:'steps10k',      name:'10,000 steps (excl. running)', emoji:'🚶' },
+    { key:'silence2min',   name:'2 minutes of silence', emoji:'🤫' },
+    { key:'wimHof',        name:'Wim Hof breathing (5 min)', emoji:'🌬️' },
+    { key:'coffeeDelay',   name:'First coffee 90 min after waking', emoji:'☕' },
+    { key:'reading15',     name:'15 min non-fiction reading', emoji:'📖' },
+    { key:'trackCalories', name:'Track every calorie', emoji:'🔢' },
+    { key:'animalDiet',    name:'Animal-based diet, ≤2300 cal, no overeating', emoji:'🥩' },
+    { key:'noSubstances',  name:'No alcohol, drugs or nicotine', emoji:'🚭' },
+    { key:'trackWeight',   name:'Track weight (every morning)', emoji:'⚖️' },
+    { key:'trackPoop',     name:'Log bowel movement', emoji:'💩' },
+    { key:'noPhoneHours',  name:'No phone/social first & last hour', emoji:'📵' },
+    { key:'noPmo',         name:'No masturbation', emoji:'🚫' },
+  ];
+  const SUBGOAL_KEYS = SUBGOAL_DEFS.map(s=>s.key);
+
   function getOrderedTaskDefs(){
     if(!Array.isArray(state.taskOrder)) state.taskOrder = TASK_KEYS.slice();
     let order = state.taskOrder.filter(k=>TASK_KEYS.indexOf(k)!==-1);
@@ -587,8 +636,19 @@ body {
     return order.map(k=>TASK_DEFS.find(t=>t.key===k));
   }
 
-  function emptyDay(){ const d={ photoData:null, note:'', waterCount:0 }; TASK_KEYS.forEach(k=>d[k]=false); return d; }
-  function getDay(k){ if(!state.days[k]) state.days[k]=emptyDay(); return state.days[k]; }
+  function emptyDay(){
+    const d={ photoData:null, note:'', waterCount:0, subgoals:{} };
+    TASK_KEYS.forEach(k=>d[k]=false);
+    SUBGOAL_KEYS.forEach(k=>d.subgoals[k]=false);
+    return d;
+  }
+  function getDay(k){
+    if(!state.days[k]) state.days[k]=emptyDay();
+    const rec = state.days[k];
+    if(!rec.subgoals || typeof rec.subgoals!=='object') rec.subgoals = {};
+    SUBGOAL_KEYS.forEach(key=>{ if(typeof rec.subgoals[key]!=='boolean') rec.subgoals[key]=false; });
+    return rec;
+  }
   function allTasksDone(rec){ return !!rec && TASK_KEYS.every(k=>rec[k]); }
   function doneCount(rec){ if(!rec) return 0; return TASK_KEYS.filter(k=>rec[k]).length; }
 
@@ -670,6 +730,7 @@ body {
   }
 
   let pendingCheckAnim = null;
+  let pendingSubgoalAnim = null;
   let openTaskNotes = new Set();
 
   function moveTask(key, dir){
@@ -1059,8 +1120,29 @@ body {
   $('menuClose').addEventListener('click',()=>$('menuOverlay').classList.remove('show'));
   $('menuOverlay').addEventListener('click',(e)=>{ if(e.target.id==='menuOverlay') $('menuOverlay').classList.remove('show'); });
 
+  function renderSubgoals(){
+    const rec = getDay(todayKey());
+    const done = SUBGOAL_KEYS.filter(k=>rec.subgoals[k]).length;
+    $('subgoalProgress').innerHTML = '<b>'+done+'</b> / '+SUBGOAL_KEYS.length+' bonus goals today';
+    const animKey = pendingSubgoalAnim; pendingSubgoalAnim = null;
+    const list = $('subgoalList'); list.innerHTML='';
+    SUBGOAL_DEFS.forEach(s=>{
+      const li=document.createElement('li'); li.className='subgoal-row'+(rec.subgoals[s.key]?' done':'');
+      li.innerHTML = '<div class="subgoal-check'+(animKey===s.key?' check-pop':'')+'">'+(rec.subgoals[s.key]?'✓':'')+'</div>'+
+        '<span class="subgoal-name">'+s.emoji+' '+s.name+'</span>';
+      li.addEventListener('click', ()=>{
+        const turningOn = !rec.subgoals[s.key];
+        rec.subgoals[s.key] = !rec.subgoals[s.key];
+        if(turningOn) pendingSubgoalAnim = s.key;
+        save();
+        renderSubgoals();
+      });
+      list.appendChild(li);
+    });
+  }
+
   function renderAll(){
-    renderHero(); renderTasks(); renderNotes(); renderStats(); renderProgressGrid(); renderHistoryPane();
+    renderHero(); renderTasks(); renderNotes(); renderStats(); renderProgressGrid(); renderHistoryPane(); renderSubgoals();
   }
   renderAll();
 
