@@ -131,10 +131,19 @@ body {
 
 /* ===== Checklist ===== */
 .task-list { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; }
-.task-row { display: flex; align-items: center; gap: 14px; padding: 13px 2px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.task-row { padding: 13px 2px; border-top: 1px solid rgba(255,255,255,0.08); }
 .task-row:first-child { border-top: 0; }
+.task-row-main { display: flex; align-items: center; gap: 14px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.task-note-toggle {
+  flex-shrink: 0; width: 22px; height: 22px; border: 0; background: transparent;
+  color: var(--text-tertiary); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s, color 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.task-row.note-open .task-note-toggle { transform: rotate(180deg); color: var(--text-primary); }
+.task-note-detail { display: none; padding: 8px 2px 2px 38px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); white-space: pre-wrap; }
+.task-row.note-open .task-note-detail { display: block; }
+.task-note-detail em { color: var(--text-tertiary); font-style: italic; }
 .task-move { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
 .task-move-btn { width: 22px; height: 17px; border: 0; border-radius: 4px; background: rgba(255,255,255,0.07);
   color: var(--text-secondary); font-size: 9px; line-height: 1; display: flex; align-items: center; justify-content: center;
@@ -165,7 +174,7 @@ body {
 .task-thumb { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
 
 /* ===== Water segmented bar ===== */
-.task-row-water { align-items: flex-start; }
+.task-row-water .task-row-main { align-items: flex-start; }
 .task-row-water .task-check { margin-top: 2px; }
 .task-row-water .task-main { gap: 4px; }
 .water-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -210,6 +219,16 @@ body {
   background: transparent; color: var(--text-tertiary); font-family: inherit; font-size: 12px; font-weight: 700;
   cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .preset-add-btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+/* ===== Task notes ===== */
+.task-note-list { display: flex; flex-direction: column; gap: 12px; }
+.task-note-row { display: flex; flex-direction: column; gap: 5px; }
+.task-note-row-label { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
+.task-note-row textarea { width: 100%; min-height: 50px; padding: 9px 11px; border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px; background: #000; color: var(--text-primary); font-family: inherit; font-size: 12.5px;
+  outline: none; resize: vertical; }
+.task-note-row textarea:focus { border-color: var(--accent); }
+.task-note-row textarea::placeholder { color: var(--text-tertiary); }
 
 /* ===== Notes ===== */
 .notes-wrap { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
@@ -281,6 +300,9 @@ body {
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .modal-title { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; color: var(--text-primary); }
 .modal-close { border: 0; background: transparent; color: var(--text-tertiary); font-size: 22px; cursor: pointer; line-height: 1; padding: 4px; }
+.modal-head-actions { display: flex; align-items: center; gap: 6px; }
+.modal-save { border: 0; background: transparent; color: var(--text-tertiary); font-size: 17px; cursor: pointer; line-height: 1; padding: 4px; -webkit-tap-highlight-color: transparent; }
+.modal-save:hover { color: var(--text-primary); }
 .modal-close:hover { color: var(--text-primary); }
 .field { margin-bottom: 14px; }
 .field-label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px; }
@@ -305,6 +327,14 @@ body {
   font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);
   opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 50; max-width: 86vw; text-align: center; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.toast-success { background: #143d24; border-color: rgba(52,211,153,0.5); color: #6EE7B7; }
+.toast-check {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; background: #34D399; color: #06170D;
+  font-size: 10px; font-weight: 800; margin-right: 6px; vertical-align: -3px;
+  animation: toastCheckPop 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes toastCheckPop { 0% { transform: scale(0); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
 @media (max-width: 480px) {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
@@ -426,7 +456,10 @@ body {
   <div class="modal" role="dialog" aria-label="Challenge settings">
     <div class="modal-head">
       <span class="modal-title">CHALLENGE SETTINGS</span>
-      <button class="modal-close" id="settingsClose" type="button" aria-label="Close">×</button>
+      <div class="modal-head-actions">
+        <button class="modal-save" id="settingsSave" type="button" aria-label="Save">💾</button>
+        <button class="modal-close" id="settingsClose" type="button" aria-label="Close">×</button>
+      </div>
     </div>
     <div class="field">
       <label class="field-label">Task order</label>
@@ -441,6 +474,11 @@ body {
       <div class="chip-row" id="waterUnitOptions"></div>
       <div class="preset-edit-list" id="presetsEditList"></div>
       <div class="field-note" id="waterUnitPreview"></div>
+    </div>
+    <div class="field">
+      <label class="field-label">Task notes</label>
+      <div class="task-note-list" id="taskNoteList"></div>
+      <div class="field-note">Add details for any task, then tap the arrow next to it in the checklist to read them back.</div>
     </div>
   </div>
 </div>
@@ -500,6 +538,7 @@ body {
   if(!state.settings.waterUnitMl) state.settings.waterUnitMl = 250;
   if(!Array.isArray(state.settings.waterPresets) || !state.settings.waterPresets.length) state.settings.waterPresets = defaultWaterPresets();
   if(typeof state.settings.tasksUnlocked !== 'boolean') state.settings.tasksUnlocked = false;
+  if(!state.settings.taskNotes || typeof state.settings.taskNotes!=='object') state.settings.taskNotes = {};
 
   const GALLON_ML = 3785;
   function waterUnitMl(){ return state.settings.waterUnitMl || 250; }
@@ -599,8 +638,12 @@ body {
   }
 
   /* ============ Rendering ============ */
-  function showToast(msg){
-    const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  function showToast(msg, variant){
+    const t=$('toast');
+    if(variant==='success'){ t.innerHTML = '<span class="toast-check">✓</span>'+msg; }
+    else { t.textContent = msg; }
+    t.classList.toggle('toast-success', variant==='success');
+    t.classList.add('show');
     clearTimeout(showToast._t); showToast._t=setTimeout(()=>t.classList.remove('show'), 2200);
   }
 
@@ -625,6 +668,7 @@ body {
   }
 
   let pendingCheckAnim = null;
+  let openTaskNotes = new Set();
 
   function moveTask(key, dir){
     const arr = state.taskOrder;
@@ -655,7 +699,7 @@ body {
         '</span>' : '';
 
       if(t.key==='water'){
-        li.className='task-row task-row-water'+(rec.water?' done':'');
+        li.className='task-row task-row-water'+(rec.water?' done':'')+(openTaskNotes.has(t.key)?' note-open':'');
         const count = rec.waterCount;
         let segsHtml='';
         for(let i=0;i<total;i++){
@@ -663,17 +707,22 @@ body {
           const style = filled ? ' style="background:'+waterSegColor(i,total)+'"' : '';
           segsHtml += '<span class="water-seg'+(filled?' filled':'')+'"'+style+' data-i="'+i+'"></span>';
         }
-        li.innerHTML = moveHtml +
-          '<div class="task-check'+(animKey==='water'?' check-pop':'')+'">'+(rec.water?'✓':'')+'</div>'+
-          '<div class="task-main">'+
-            '<span class="task-name">'+t.name+'</span>'+
-            '<span class="task-sub">'+waterUnitMl()+'ml per '+waterUnitName()+' · '+total+' × '+waterUnitName()+'</span>'+
-            '<div class="water-bar">'+segsHtml+'</div>'+
+        const note = (state.settings.taskNotes && state.settings.taskNotes[t.key]) || '';
+        li.innerHTML =
+          '<div class="task-row-main">' + moveHtml +
+            '<div class="task-check'+(animKey==='water'?' check-pop':'')+'">'+(rec.water?'✓':'')+'</div>'+
+            '<div class="task-main">'+
+              '<span class="task-name">'+t.name+'</span>'+
+              '<span class="task-sub">'+waterUnitMl()+'ml per '+waterUnitName()+' · '+total+' × '+waterUnitName()+'</span>'+
+              '<div class="water-bar">'+segsHtml+'</div>'+
+            '</div>'+
+            '<div class="water-count-col">'+
+              '<span class="water-count">'+count+' / '+total+'</span>'+
+              '<button type="button" class="water-add-btn" aria-label="Add one unit">💧</button>'+
+            '</div>'+
+            '<button type="button" class="task-note-toggle" aria-label="Show details">▾</button>'+
           '</div>'+
-          '<div class="water-count-col">'+
-            '<span class="water-count">'+count+' / '+total+'</span>'+
-            '<button type="button" class="water-add-btn" aria-label="Add one unit">💧</button>'+
-          '</div>';
+          '<div class="task-note-detail">'+(note?escAttr(note):'<em>No details added yet — add one in Settings.</em>')+'</div>';
         li.querySelector('.task-check').addEventListener('click', (e)=>{
           e.stopPropagation();
           if(count<total) pendingCheckAnim='water';
@@ -697,19 +746,30 @@ body {
         li.querySelectorAll('.task-move-btn').forEach(btn=>{
           btn.addEventListener('click', (e)=>{ e.stopPropagation(); moveTask(t.key, parseInt(btn.dataset.dir,10)); });
         });
+        li.querySelector('.task-note-toggle').addEventListener('click', (e)=>{
+          e.stopPropagation();
+          if(openTaskNotes.has(t.key)) openTaskNotes.delete(t.key); else openTaskNotes.add(t.key);
+          li.classList.toggle('note-open');
+        });
         list.appendChild(li);
         return;
       }
 
-      li.className='task-row'+(rec[t.key]?' done':'');
+      li.className='task-row'+(rec[t.key]?' done':'')+(openTaskNotes.has(t.key)?' note-open':'');
       const checkHtml = '<div class="task-check'+(animKey===t.key?' check-pop':'')+'">'+(rec[t.key]?'✓':'')+'</div>';
       const subHtml = t.sub ? '<span class="task-sub">'+t.sub+'</span>' : '';
       const thumbHtml = (t.camera && rec.photoData) ? '<img class="task-thumb" src="'+rec.photoData+'" alt="">' : '';
-      li.innerHTML = moveHtml + checkHtml + '<div class="task-main"><span class="task-name">'+t.name+'</span>'+subHtml+'</div>' + thumbHtml;
+      const note = (state.settings.taskNotes && state.settings.taskNotes[t.key]) || '';
+      li.innerHTML =
+        '<div class="task-row-main">' + moveHtml + checkHtml +
+          '<div class="task-main"><span class="task-name">'+t.name+'</span>'+subHtml+'</div>' + thumbHtml +
+          '<button type="button" class="task-note-toggle" aria-label="Show details">▾</button>'+
+        '</div>'+
+        '<div class="task-note-detail">'+(note?escAttr(note):'<em>No details added yet — add one in Settings.</em>')+'</div>';
       li.querySelectorAll('.task-move-btn').forEach(btn=>{
         btn.addEventListener('click', (e)=>{ e.stopPropagation(); moveTask(t.key, parseInt(btn.dataset.dir,10)); });
       });
-      li.addEventListener('click', ()=>{
+      li.querySelector('.task-row-main').addEventListener('click', ()=>{
         if(t.key==='photo'){
           openPhotoChoice();
         } else {
@@ -718,6 +778,11 @@ body {
           if(turningOn) pendingCheckAnim = t.key;
           save(); renderAll();
         }
+      });
+      li.querySelector('.task-note-toggle').addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if(openTaskNotes.has(t.key)) openTaskNotes.delete(t.key); else openTaskNotes.add(t.key);
+        li.classList.toggle('note-open');
       });
       list.appendChild(li);
     });
@@ -883,6 +948,21 @@ body {
     save(); renderAll(); renderSettings();
   }
 
+  function renderTaskNotes(){
+    const wrap = $('taskNoteList'); wrap.innerHTML='';
+    TASK_DEFS.forEach(t=>{
+      const row = document.createElement('div'); row.className='task-note-row';
+      row.innerHTML = '<span class="task-note-row-label">'+t.emoji+' '+t.name+'</span>'+
+        '<textarea placeholder="Add details for this task…">'+escAttr(state.settings.taskNotes[t.key]||'')+'</textarea>';
+      row.querySelector('textarea').addEventListener('change', function(){
+        state.settings.taskNotes[t.key] = this.value;
+        save();
+        renderTasks();
+      });
+      wrap.appendChild(row);
+    });
+  }
+
   function renderSettings(){
     const unlocked = !!state.settings.tasksUnlocked;
     $('taskLockBtn').textContent = unlocked ? '🔓 Unlocked — tap to lock' : '🔒 Locked — tap to unlock';
@@ -958,8 +1038,12 @@ body {
     save(); renderTasks(); renderSettings();
   });
   $('presetsEditBtn').addEventListener('click', ()=>{ presetsEditMode = !presetsEditMode; renderSettings(); });
-  $('settingsBtn').addEventListener('click', ()=>{ presetsEditMode=false; renderSettings(); $('settingsBg').classList.add('open'); });
+  $('settingsBtn').addEventListener('click', ()=>{ presetsEditMode=false; renderSettings(); renderTaskNotes(); $('settingsBg').classList.add('open'); });
   $('settingsClose').addEventListener('click', ()=>$('settingsBg').classList.remove('open'));
+  $('settingsSave').addEventListener('click', ()=>{
+    showToast('Settings saved', 'success');
+    $('settingsBg').classList.remove('open');
+  });
   $('settingsBg').addEventListener('click', (e)=>{ if(e.target.id==='settingsBg') $('settingsBg').classList.remove('open'); });
 
   /* ============ Rules modal ============ */
@@ -999,6 +1083,7 @@ body {
           if(!state.settings.waterUnitMl) state.settings.waterUnitMl = 250;
           if(!Array.isArray(state.settings.waterPresets) || !state.settings.waterPresets.length) state.settings.waterPresets = defaultWaterPresets();
           if(typeof state.settings.tasksUnlocked !== 'boolean') state.settings.tasksUnlocked = false;
+          if(!state.settings.taskNotes || typeof state.settings.taskNotes!=='object') state.settings.taskNotes = {};
         }
         checkRollover();
         renderAll();
