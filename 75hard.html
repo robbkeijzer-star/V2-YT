@@ -377,8 +377,6 @@ body {
         <label class="notes-label">Notes</label>
         <textarea class="notes-input" id="notesInput" placeholder="Make notes of any challenges, insights, or breakthroughs you achieve."></textarea>
       </div>
-
-      <button class="restart-btn" id="restartBtn" type="button">Restart challenge from Day 1</button>
     </div>
   </div>
 
@@ -479,6 +477,10 @@ body {
       <label class="field-label">Task notes</label>
       <div class="task-note-list" id="taskNoteList"></div>
       <div class="field-note">Add details for any task, then tap the arrow next to it in the checklist to read them back.</div>
+    </div>
+    <div class="field">
+      <label class="field-label">Danger zone</label>
+      <button class="restart-btn" id="restartBtn" type="button">Restart challenge from Day 1</button>
     </div>
   </div>
 </div>
@@ -933,6 +935,7 @@ body {
     state.startDate = todayKey();
     save();
     renderAll();
+    $('settingsBg').classList.remove('open');
     showToast('Restarted — back to Day 1');
   });
 
