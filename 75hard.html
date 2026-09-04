@@ -652,6 +652,34 @@ body {
   }
   function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+  /* ============ Task-complete sound ============ */
+  let audioCtxRef = null;
+  function audioCtx(){
+    if(!audioCtxRef) audioCtxRef = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtxRef.state === 'suspended') audioCtxRef.resume();
+    return audioCtxRef;
+  }
+  function playTone(c, opts){
+    const freq=opts.freq, start=opts.start, dur=opts.dur, type=opts.type||'sine',
+      peak=opts.peak!==undefined?opts.peak:0.28, attack=opts.attack!==undefined?opts.attack:0.006;
+    const osc=c.createOscillator(), gain=c.createGain();
+    osc.type=type;
+    osc.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(peak, start+attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start+dur);
+    osc.connect(gain).connect(c.destination);
+    osc.start(start);
+    osc.stop(start+dur+0.02);
+  }
+  function playTaskDoneSound(){
+    try {
+      const c = audioCtx(), t = c.currentTime;
+      playTone(c, { freq:140, start:t, dur:0.22, type:'sine', peak:0.34, attack:0.004 });
+      playTone(c, { freq:700, start:t, dur:0.05, type:'triangle', peak:0.12, attack:0.002 });
+    } catch(e){}
+  }
+
   function save(){ state.updatedAt = Date.now(); saveJSON(STATE_KEY, state); }
   function pad2(n){ return n<10 ? '0'+n : ''+n; }
   function dateKey(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
@@ -845,7 +873,7 @@ body {
           '<div class="task-note-detail">'+(note?escAttr(note):'<em>No details added yet — add one in Settings.</em>')+'</div>';
         li.querySelector('.task-check').addEventListener('click', (e)=>{
           e.stopPropagation();
-          if(count<total) pendingCheckAnim='water';
+          if(count<total){ pendingCheckAnim='water'; playTaskDoneSound(); }
           setWaterCount(count>=total ? 0 : total);
         });
         li.querySelectorAll('.water-seg').forEach(seg=>{
@@ -853,14 +881,14 @@ body {
             e.stopPropagation();
             const idx = parseInt(seg.dataset.i,10);
             const newCount = idx<count ? idx : idx+1;
-            if(newCount>=total && count<total) pendingCheckAnim='water';
+            if(newCount>=total && count<total){ pendingCheckAnim='water'; playTaskDoneSound(); }
             setWaterCount(newCount);
           });
         });
         li.querySelector('.water-add-btn').addEventListener('click', (e)=>{
           e.stopPropagation();
           const newCount = count+1;
-          if(newCount>=total && count<total) pendingCheckAnim='water';
+          if(newCount>=total && count<total){ pendingCheckAnim='water'; playTaskDoneSound(); }
           setWaterCount(newCount);
         });
         li.querySelectorAll('.task-move-btn').forEach(btn=>{
@@ -895,7 +923,7 @@ body {
         } else {
           const turningOn = !rec[t.key];
           rec[t.key] = !rec[t.key];
-          if(turningOn) pendingCheckAnim = t.key;
+          if(turningOn){ pendingCheckAnim = t.key; playTaskDoneSound(); }
           save(); renderAll();
         }
       });
@@ -915,7 +943,7 @@ body {
       const rec = getDay(todayKey());
       const turningOn = !rec.photo;
       rec.photoData = dataUrl; rec.photo = true;
-      if(turningOn) pendingCheckAnim = 'photo';
+      if(turningOn){ pendingCheckAnim = 'photo'; playTaskDoneSound(); }
       save(); renderAll(); showToast('Photo added');
     });
     e.target.value = '';
