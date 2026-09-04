@@ -881,14 +881,16 @@ body {
             e.stopPropagation();
             const idx = parseInt(seg.dataset.i,10);
             const newCount = idx<count ? idx : idx+1;
-            if(newCount>=total && count<total){ pendingCheckAnim='water'; playTaskDoneSound(); }
+            if(newCount>count) playTaskDoneSound();
+            if(newCount>=total && count<total) pendingCheckAnim='water';
             setWaterCount(newCount);
           });
         });
         li.querySelector('.water-add-btn').addEventListener('click', (e)=>{
           e.stopPropagation();
           const newCount = count+1;
-          if(newCount>=total && count<total){ pendingCheckAnim='water'; playTaskDoneSound(); }
+          playTaskDoneSound();
+          if(newCount>=total && count<total) pendingCheckAnim='water';
           setWaterCount(newCount);
         });
         li.querySelectorAll('.task-move-btn').forEach(btn=>{
