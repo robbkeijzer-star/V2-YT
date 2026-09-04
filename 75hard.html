@@ -384,6 +384,11 @@ body {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
   .gm-card { padding: 16px; }
   .day-num-hero { font-size: 42px; }
+  .toast.toast-success {
+    top: max(16px, env(safe-area-inset-top)); bottom: auto;
+    transform: translateX(-50%) translateY(-16px);
+  }
+  .toast.toast-success.show { transform: translateX(-50%) translateY(0); }
 }
 </style>
 </head>
